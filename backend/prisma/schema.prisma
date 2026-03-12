@@ -1,0 +1,287 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AnonSession {
+  id               String   @id @default(cuid())
+  codename         String   @unique
+  tokenHash        String   @unique
+  createdAt        DateTime @default(now())
+  lastSeenAt       DateTime @default(now())
+  ipRegion         String?
+  credibilityScore Int      @default(100)
+  earnings         Decimal  @db.Decimal(12, 2) @default(0)
+
+  secrets         Secret[]
+  votes           Vote[]
+  reactions       Reaction[]
+  comments        Comment[]
+  peeks           Peek[]
+  bowlMemberships BowlMembership[]
+  payouts         Payout[]
+
+  @@index([tokenHash])
+}
+
+model Secret {
+  id        String      @id @default(cuid())
+  sessionId String
+  session   AnonSession @relation(fields: [sessionId], references: [id])
+
+  category    SecretCategory
+  content     String
+  hintText    String?
+  isGhost     Boolean        @default(false)
+  peekPrice   Decimal?       @db.Decimal(10, 2)
+  unlockPrice Decimal?       @db.Decimal(10, 2)
+
+  status       SecretStatus @default(PENDING)
+  poolDate     DateTime?    @db.Date
+  entryFeePaid Decimal      @db.Decimal(10, 2)
+  entryTxId    String?
+
+  mediaUrl    String?
+  mediaType   String?   // 'image' | 'video' | 'document'
+  linkUrl     String?
+  linkTitle   String?
+  linkDomain  String?
+
+  aiModerationScore Float?
+  aiExplosiveScore  Float?
+  embeddingId       String?
+
+  rankScore Float @default(0)
+
+  voteCount     Int @default(0)
+  reactionCount Int @default(0)
+  shareCount    Int @default(0)
+  peekCount     Int @default(0)
+  unlockCount   Int @default(0)
+  reportCount   Int @default(0)
+  commentCount  Int @default(0)
+
+  bowlId String?
+  bowl   Bowl?   @relation(fields: [bowlId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  votes     Vote[]
+  reactions Reaction[]
+  comments  Comment[]
+  peeks     Peek[]
+  reports   Report[]
+  poolEntry PoolEntry?
+
+  @@index([poolDate, rankScore(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([bowlId, rankScore(sort: Desc)])
+}
+
+enum SecretCategory {
+  CORPORATE
+  POLITICAL
+  CELEBRITY
+  PERSONAL
+  INDUSTRY
+  PARANORMAL
+  ZERO_DAY
+}
+
+enum SecretStatus {
+  PENDING
+  ACTIVE
+  GHOST_LOCKED
+  REJECTED
+  WINNER
+  ARCHIVED
+}
+
+model Vote {
+  id        String      @id @default(cuid())
+  secretId  String
+  secret    Secret      @relation(fields: [secretId], references: [id])
+  sessionId String
+  session   AnonSession @relation(fields: [sessionId], references: [id])
+  createdAt DateTime    @default(now())
+
+  @@unique([secretId, sessionId])
+  @@index([secretId])
+}
+
+model Reaction {
+  id        String      @id @default(cuid())
+  secretId  String
+  secret    Secret      @relation(fields: [secretId], references: [id])
+  sessionId String
+  session   AnonSession @relation(fields: [sessionId], references: [id])
+  emoji     String
+  createdAt DateTime    @default(now())
+
+  @@unique([secretId, sessionId, emoji])
+  @@index([secretId])
+}
+
+model Peek {
+  id         String      @id @default(cuid())
+  secretId   String
+  secret     Secret      @relation(fields: [secretId], references: [id])
+  sessionId  String
+  session    AnonSession @relation(fields: [sessionId], references: [id])
+  type       PeekType
+  amountPaid Decimal     @db.Decimal(10, 2)
+  txId       String
+  createdAt  DateTime    @default(now())
+
+  @@unique([secretId, sessionId, type])
+  @@index([secretId])
+}
+
+enum PeekType {
+  PEEK
+  UNLOCK
+}
+
+model Comment {
+  id        String      @id @default(cuid())
+  secretId  String
+  secret    Secret      @relation(fields: [secretId], references: [id])
+  sessionId String
+  session   AnonSession @relation(fields: [sessionId], references: [id])
+  content   String      @db.VarChar(500)
+  createdAt DateTime    @default(now())
+
+  parentId  String?
+  parent    Comment?    @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[]   @relation("CommentReplies")
+
+  @@index([secretId, createdAt])
+  @@index([parentId])
+}
+
+model Report {
+  id        String       @id @default(cuid())
+  secretId  String
+  secret    Secret       @relation(fields: [secretId], references: [id])
+  reason    ReportReason
+  detail    String?
+  createdAt DateTime     @default(now())
+
+  @@index([secretId])
+}
+
+enum ReportReason {
+  FAKE
+  ILLEGAL
+  PII_LEAK
+  SPAM
+  OTHER
+}
+
+model DailyPool {
+  id             String     @id @default(cuid())
+  poolDate       DateTime   @unique @db.Date
+  totalAmount    Decimal    @db.Decimal(12, 2) @default(0)
+  winnerSecretId String?
+  winnerPayout   Decimal?   @db.Decimal(12, 2)
+  status         PoolStatus @default(OPEN)
+  settledAt      DateTime?
+
+  entries PoolEntry[]
+
+  @@index([poolDate])
+}
+
+model PoolEntry {
+  id        String    @id @default(cuid())
+  poolId    String
+  pool      DailyPool @relation(fields: [poolId], references: [id])
+  secretId  String    @unique
+  secret    Secret    @relation(fields: [secretId], references: [id])
+  entryFee  Decimal   @db.Decimal(10, 2)
+  peekFees  Decimal   @db.Decimal(10, 2) @default(0)
+  createdAt DateTime  @default(now())
+}
+
+enum PoolStatus {
+  OPEN
+  CALCULATING
+  SETTLED
+}
+
+model Payout {
+  id          String       @id @default(cuid())
+  sessionId   String
+  session     AnonSession  @relation(fields: [sessionId], references: [id])
+  amount      Decimal      @db.Decimal(12, 2)
+  currency    String       @default("USD")
+  method      PayoutMethod
+  destination String
+  status      PayoutStatus @default(PENDING)
+  txHash      String?
+  createdAt   DateTime     @default(now())
+  settledAt   DateTime?
+
+  @@index([sessionId])
+}
+
+enum PayoutMethod {
+  CRYPTO_USDC
+  PLATFORM_CREDIT
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Bowl {
+  id               String   @id @default(cuid())
+  slug             String   @unique
+  name             String
+  description      String?
+  coverEmoji       String   @default("🏺")
+  isPrivate        Boolean  @default(false)
+  entryFee         Decimal? @db.Decimal(10, 2)
+  creatorSessionId String
+  memberCount      Int      @default(0)
+  secretCount      Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  secrets     Secret[]
+  memberships BowlMembership[]
+
+  @@index([isPrivate, createdAt])
+}
+
+model BowlMembership {
+  id        String      @id @default(cuid())
+  bowlId    String
+  bowl      Bowl        @relation(fields: [bowlId], references: [id])
+  sessionId String
+  session   AnonSession @relation(fields: [sessionId], references: [id])
+  joinedAt  DateTime    @default(now())
+  txId      String?
+
+  @@unique([bowlId, sessionId])
+}
+
+model HallOfFameEntry {
+  id          String         @id @default(cuid())
+  secretId    String
+  codename    String
+  winDate     DateTime       @db.Date
+  prizeAmount Decimal        @db.Decimal(12, 2)
+  rankScore   Float
+  snippet     String
+  category    SecretCategory
+
+  @@index([winDate(sort: Desc)])
+}

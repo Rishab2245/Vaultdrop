@@ -1,0 +1,53 @@
+{
+  "name": "vaultdrop-backend",
+  "version": "1.0.0",
+  "description": "VaultDrop backend - Node.js/Express/GraphQL",
+  "main": "dist/index.js",
+  "scripts": {
+    "infra": "node start-infra.js",
+    "dev": "nodemon",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "ts-node prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "stripe:listen": "stripe listen --forward-to localhost:4000/webhooks/stripe",
+    "stripe:login": "stripe login"
+  },
+  "dependencies": {
+    "@apollo/server": "^4.11.0",
+    "@prisma/client": "^5.22.0",
+    "@types/multer": "^2.1.0",
+    "axios": "^1.7.9",
+    "body-parser": "^1.20.3",
+    "bullmq": "^5.28.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.1",
+    "express-rate-limit": "^7.4.1",
+    "graphql": "^16.9.0",
+    "ioredis": "^5.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.1.1",
+    "node-cron": "^3.0.3",
+    "socket.io": "^4.8.1",
+    "stripe": "^17.3.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.8",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.9.0",
+    "@types/node-cron": "^3.0.11",
+    "embedded-postgres": "^18.3.0-beta.16",
+    "nodemon": "^3.1.9",
+    "prisma": "^5.22.0",
+    "redis-memory-server": "^0.16.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}

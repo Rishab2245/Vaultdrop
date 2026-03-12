@@ -1,0 +1,383 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-dark: #0b0d12;
+  --bg-card: #111520;
+  --bg-card-hover: #161b28;
+  --border: #1e2535;
+  --border-mid: #2a3347;
+
+  /* Amber — muted warm gold, not neon */
+  --amber: #c9a227;
+  --amber-dark: #8a6c14;
+  --amber-dim: rgba(201, 162, 39, 0.15);
+  --amber-faint: rgba(201, 162, 39, 0.07);
+
+  /* Slate blue — muted, not neon cyan */
+  --slate: #4a7fa5;
+  --slate-dim: rgba(74, 127, 165, 0.15);
+
+  /* Supporting palette — all desaturated */
+  --violet: #7a50a0;
+  --sage: #3d7a54;
+  --rust: #a03535;
+  --rust-bright: #c04444;
+
+  /* Text */
+  --text-primary: #bcc5d4;
+  --text-secondary: #6a7a8e;
+  --text-dim: #3a4558;
+  --text-amber: #c9a227;
+  --text-slate: #4a7fa5;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Press Start 2P', monospace;
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  line-height: 1.8;
+  font-size: 12px;
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Subtle scanline overlay */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.03) 3px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ─── Pixel borders ─────────────────────────────────────── */
+.pixel-border {
+  box-shadow: 0 -2px 0 0 var(--border-mid), 0 2px 0 0 var(--border-mid),
+    -2px 0 0 0 var(--border-mid), 2px 0 0 0 var(--border-mid);
+}
+.pixel-border-amber {
+  box-shadow: 0 -2px 0 0 var(--amber), 0 2px 0 0 var(--amber),
+    -2px 0 0 0 var(--amber), 2px 0 0 0 var(--amber);
+}
+.pixel-border-slate {
+  box-shadow: 0 -2px 0 0 var(--slate), 0 2px 0 0 var(--slate),
+    -2px 0 0 0 var(--slate), 2px 0 0 0 var(--slate);
+}
+.pixel-border-rust {
+  box-shadow: 0 -2px 0 0 var(--rust), 0 2px 0 0 var(--rust),
+    -2px 0 0 0 var(--rust), 2px 0 0 0 var(--rust);
+}
+.pixel-border-sage {
+  box-shadow: 0 -2px 0 0 var(--sage), 0 2px 0 0 var(--sage),
+    -2px 0 0 0 var(--sage), 2px 0 0 0 var(--sage);
+}
+.pixel-border-muted {
+  box-shadow: 0 -2px 0 0 var(--border), 0 2px 0 0 var(--border),
+    -2px 0 0 0 var(--border), 2px 0 0 0 var(--border);
+}
+
+/* ─── Pixel buttons ─────────────────────────────────────── */
+.pixel-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  cursor: pointer;
+  border: none;
+  padding: 10px 18px;
+  position: relative;
+  transition: transform 0.08s, filter 0.1s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  text-decoration: none;
+  user-select: none;
+}
+.pixel-btn:active:not(:disabled) {
+  transform: translateY(2px);
+}
+.pixel-btn-gold {
+  background: var(--amber);
+  color: #0b0d12;
+  box-shadow: 0 4px 0 0 var(--amber-dark), 0 -2px 0 0 var(--amber),
+    -2px 0 0 0 var(--amber), 2px 0 0 0 var(--amber);
+}
+.pixel-btn-gold:active:not(:disabled) {
+  box-shadow: 0 1px 0 0 var(--amber-dark), 0 -2px 0 0 var(--amber),
+    -2px 0 0 0 var(--amber), 2px 0 0 0 var(--amber);
+}
+.pixel-btn-gold:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+.pixel-btn-cyan {
+  background: var(--slate);
+  color: #0b0d12;
+  box-shadow: 0 4px 0 0 #2d5068, 0 -2px 0 0 var(--slate),
+    -2px 0 0 0 var(--slate), 2px 0 0 0 var(--slate);
+}
+.pixel-btn-cyan:active:not(:disabled) {
+  box-shadow: 0 1px 0 0 #2d5068, 0 -2px 0 0 var(--slate),
+    -2px 0 0 0 var(--slate), 2px 0 0 0 var(--slate);
+}
+.pixel-btn-cyan:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+.pixel-btn-ghost {
+  background: transparent;
+  color: var(--text-primary);
+  box-shadow: 0 4px 0 0 var(--border), 0 -2px 0 0 var(--border),
+    -2px 0 0 0 var(--border), 2px 0 0 0 var(--border);
+}
+.pixel-btn-ghost:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+}
+.pixel-btn-ghost:active:not(:disabled) {
+  box-shadow: 0 1px 0 0 var(--border), 0 -2px 0 0 var(--border),
+    -2px 0 0 0 var(--border), 2px 0 0 0 var(--border);
+}
+.pixel-btn-red {
+  background: var(--rust);
+  color: #ddd;
+  box-shadow: 0 4px 0 0 #6a1f1f, 0 -2px 0 0 var(--rust),
+    -2px 0 0 0 var(--rust), 2px 0 0 0 var(--rust);
+}
+.pixel-btn-red:hover:not(:disabled) {
+  filter: brightness(1.15);
+}
+.pixel-btn-red:active:not(:disabled) {
+  box-shadow: 0 1px 0 0 #6a1f1f, 0 -2px 0 0 var(--rust),
+    -2px 0 0 0 var(--rust), 2px 0 0 0 var(--rust);
+}
+.pixel-btn-sm {
+  font-size: 7px;
+  padding: 7px 11px;
+}
+.pixel-btn-lg {
+  font-size: 11px;
+  padding: 14px 24px;
+}
+.pixel-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ─── Input styles ──────────────────────────────────────── */
+.pixel-input {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  border: none;
+  padding: 11px;
+  width: 100%;
+  outline: none;
+  box-shadow: 0 -1px 0 0 var(--border), 0 1px 0 0 var(--border),
+    -1px 0 0 0 var(--border), 1px 0 0 0 var(--border);
+  transition: box-shadow 0.15s;
+  resize: vertical;
+}
+.pixel-input:focus {
+  box-shadow: 0 -1px 0 0 var(--slate), 0 1px 0 0 var(--slate),
+    -1px 0 0 0 var(--slate), 1px 0 0 0 var(--slate);
+}
+.pixel-input::placeholder {
+  color: var(--text-dim);
+  opacity: 0.8;
+}
+textarea.pixel-input {
+  min-height: 100px;
+  line-height: 2;
+}
+
+/* ─── Category badge colors (muted) ────────────────────── */
+.badge-CORPORATE  { background: #0e1e30; color: #4a8ab0; }
+.badge-POLITICAL  { background: #200f0f; color: #a05050; }
+.badge-CELEBRITY  { background: #1e0f1e; color: #9060a0; }
+.badge-PERSONAL   { background: #0f200f; color: #4a8a5a; }
+.badge-INDUSTRY   { background: #1a180a; color: #909040; }
+.badge-PARANORMAL { background: #0f0f20; color: #5060a0; }
+.badge-ZERO_DAY   { background: #1e120a; color: #a06030; }
+
+/* ─── Animations ────────────────────────────────────────── */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+@keyframes pixelIn {
+  0% { transform: translateY(6px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes coinDrop {
+  0% { transform: translateY(-12px); opacity: 0; }
+  60% { transform: translateY(2px); }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.5; }
+  94% { opacity: 1; }
+  96% { opacity: 0.7; }
+  97% { opacity: 1; }
+}
+@keyframes march {
+  0% { background-position: 0 0; }
+  100% { background-position: 16px 0; }
+}
+@keyframes floatUp {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-40px); opacity: 0; }
+}
+@keyframes slideIn {
+  0% { transform: translateX(-20px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+.animate-blink    { animation: blink 1s step-end infinite; }
+.animate-flicker  { animation: flicker 8s infinite; }
+.animate-pixel-in { animation: pixelIn 0.25s ease-out; }
+.animate-coin-drop { animation: coinDrop 0.35s ease-out; }
+.animate-float-up { animation: floatUp 0.8s ease-out forwards; }
+.animate-slide-in { animation: slideIn 0.25s ease-out; }
+
+/* ─── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: var(--border); }
+::-webkit-scrollbar-thumb:hover { background: var(--border-mid); }
+
+/* ─── Pixel divider ─────────────────────────────────────── */
+.pixel-divider {
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--border) 0px,
+    var(--border) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  border: none;
+}
+
+/* ─── Progress bar ──────────────────────────────────────── */
+.pixel-progress {
+  height: 10px;
+  background: var(--bg-dark);
+  box-shadow: 0 -1px 0 0 var(--border), 0 1px 0 0 var(--border),
+    -1px 0 0 0 var(--border), 1px 0 0 0 var(--border);
+  position: relative;
+  overflow: hidden;
+}
+.pixel-progress-fill {
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--amber) 0px,
+    var(--amber) 8px,
+    var(--amber-dark) 8px,
+    var(--amber-dark) 16px
+  );
+  animation: march 0.8s linear infinite;
+  transition: width 0.5s ease;
+}
+
+/* ─── Misc utilities ────────────────────────────────────── */
+.redacted {
+  background: var(--text-secondary);
+  color: transparent;
+  user-select: none;
+  display: inline-block;
+}
+
+.secret-blur {
+  filter: blur(4px);
+  user-select: none;
+  pointer-events: none;
+  color: var(--text-secondary);
+}
+
+.ghost-overlay {
+  position: relative;
+}
+.ghost-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 30%, var(--bg-card) 100%);
+  pointer-events: none;
+}
+
+::selection {
+  background: var(--amber);
+  color: #0b0d12;
+}
+
+/* ─── Pixel table ───────────────────────────────────────── */
+.pixel-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 3px;
+}
+.pixel-table th {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: var(--text-secondary);
+  text-align: left;
+  padding: 6px 10px;
+  text-transform: uppercase;
+}
+.pixel-table td {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  padding: 10px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+/* ─── Tooltip ───────────────────────────────────────────── */
+.pixel-tooltip { position: relative; }
+.pixel-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  padding: 7px;
+  white-space: nowrap;
+  box-shadow: 0 -1px 0 0 var(--border-mid), 0 1px 0 0 var(--border-mid),
+    -1px 0 0 0 var(--border-mid), 1px 0 0 0 var(--border-mid);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 100;
+}
+.pixel-tooltip:hover::after { opacity: 1; }
