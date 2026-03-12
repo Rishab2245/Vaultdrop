@@ -4,6 +4,11 @@
 
 A pixel-art themed anonymous secret marketplace where holders earn from exposing truths and hunters pay to access them.
 
+## Open Source
+
+This project is open source under the [MIT License](LICENSE). Contributions,
+forks, and collaboration are welcome.
+
 ## Quick Start
 
 ### 1. Start infrastructure (Postgres + Redis)
