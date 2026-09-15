@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Allow: /wall
+Disallow: /d/
+Disallow: /to/
+Disallow: /inbox
+Disallow: /vault
+Disallow: /api/

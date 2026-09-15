@@ -1,0 +1,115 @@
+// VaultDrop data model.
+//
+// Design rule: the server stores the minimum that makes the product work and
+// nothing that identifies a person. There are no user accounts, no sessions,
+// no IP addresses, and no email addresses anywhere in this schema.
+//
+// SQLite by default so the app runs with zero setup. Swap `provider` to
+// "postgresql" for production; no other change is required (enums are modelled
+// as validated strings precisely so both engines work).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// A public confession on the Wall. Public by definition, so it is stored as
+/// plaintext - encrypting something the whole world is meant to read would be
+/// security theatre. Authorship is proved by a token the client keeps; we store
+/// only its hash, so we can honour "delete mine" without knowing who "mine" is.
+model WallSecret {
+  id   String @id @default(cuid())
+  body String
+
+  /// One of the MOODS list in src/lib/constants.ts
+  mood String
+  /// Index into the PALETTES gradient list, used for share cards.
+  palette Int @default(0)
+
+  /// sha256 of the author's local delete-token. Irreversible, unlinkable.
+  authorTokenHash String
+
+  reactFelt Int @default(0)
+  reactHug  Int @default(0)
+  reactWhoa Int @default(0)
+  reactSame Int @default(0)
+
+  viewCount   Int     @default(0)
+  reportCount Int     @default(0)
+  hidden      Boolean @default(false)
+
+  /// Time-decayed ranking score, recomputed on write.
+  heat      Float    @default(0)
+  createdAt DateTime @default(now())
+
+  reports Report[]
+
+  @@index([hidden, heat])
+  @@index([hidden, createdAt])
+}
+
+/// A zero-knowledge payload: either a one-off private link drop or a message
+/// sent to someone's Inbox. The server holds ciphertext it cannot read - the
+/// decryption key lives in the URL fragment (never transmitted) or is derived
+/// via ECDH against a public key whose private half never leaves the browser.
+model EncryptedDrop {
+  id String @id @default(cuid())
+
+  /// base64. AES-256-GCM ciphertext.
+  ciphertext String
+  /// base64. 12-byte AES-GCM nonce.
+  iv String
+
+  /// base64 SPKI of the sender's ephemeral ECDH public key. Inbox messages only.
+  senderPubKey String?
+
+  /// base64. Present when the sender added a passphrase on top of the link key.
+  passwordSalt String?
+
+  inboxId String?
+  inbox   Inbox?  @relation(fields: [inboxId], references: [id], onDelete: Cascade)
+
+  burnAfterRead Boolean   @default(false)
+  readAt        DateTime?
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([inboxId, createdAt])
+  @@index([expiresAt])
+}
+
+/// A named anonymous inbox. Holds a public key only; the matching private key
+/// is generated in the owner's browser and never sent anywhere.
+model Inbox {
+  id     String @id @default(cuid())
+  handle String @unique
+
+  /// base64 SPKI, ECDH P-256.
+  publicKey String
+
+  /// sha256 of the owner's local claim token.
+  ownerTokenHash String
+
+  createdAt DateTime @default(now())
+
+  messages EncryptedDrop[]
+}
+
+/// Abuse report against a Wall secret. Carries no reporter identity - the point
+/// is the content, not who flagged it.
+model Report {
+  id           String     @id @default(cuid())
+  wallSecretId String
+  wallSecret   WallSecret @relation(fields: [wallSecretId], references: [id], onDelete: Cascade)
+
+  /// One of the REPORT_REASONS list in src/lib/constants.ts
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@index([wallSecretId])
+}
