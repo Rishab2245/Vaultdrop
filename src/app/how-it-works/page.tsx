@@ -33,9 +33,9 @@ export default function HowItWorksPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
       <header className="mb-14">
-        <div className="sealed mb-5">The mechanism</div>
+        <div className="stamp mb-5">The mechanism</div>
         <h1 className="text-balance text-4xl font-semibold tracking-tight">How it works</h1>
-        <p className="mt-4 max-w-xl text-pretty leading-relaxed text-chalk-dim">
+        <p className="mt-4 max-w-xl leading-relaxed text-body">
           &ldquo;We respect your privacy&rdquo; is a sentence anyone can write. Here is the part
           that is checkable instead.
         </p>
@@ -44,51 +44,51 @@ export default function HowItWorksPage() {
       <ol className="space-y-10">
         {STEPS.map((step) => (
           <li key={step.n} className="flex gap-5 sm:gap-7">
-            <span className="shrink-0 font-mono text-sm text-violet-soft">{step.n}</span>
+            <span className="shrink-0 font-mono text-sm text-amber">{step.n}</span>
             <div>
               <h2 className="text-lg font-semibold tracking-tight">{step.title}</h2>
-              <p className="mt-2 text-pretty leading-relaxed text-chalk-dim">{step.body}</p>
+              <p className="mt-2 leading-relaxed text-body">{step.body}</p>
             </div>
           </li>
         ))}
       </ol>
 
-      <section className="panel mt-16 p-7">
+      <section className="border border-hairline mt-16 p-7">
         <h2 className="text-xl font-semibold tracking-tight">Where this does not protect you</h2>
-        <p className="mt-3 text-pretty leading-relaxed text-chalk-dim">
+        <p className="mt-3 leading-relaxed text-body">
           Being straight about the limits is part of the product:
         </p>
-        <ul className="mt-5 space-y-3 text-sm leading-relaxed text-chalk-dim">
+        <ul className="mt-5 space-y-3 text-sm leading-relaxed text-body">
           <li>
-            <strong className="text-chalk">The Wall is public and unencrypted.</strong> It has to
+            <strong className="text-chrome">The Wall is public and unencrypted.</strong> It has to
             be - everyone is meant to read it. Encrypting it would be theatre. Write accordingly.
           </li>
           <li>
-            <strong className="text-chalk">Whoever holds the link can read the drop.</strong> If you
+            <strong className="text-chrome">Whoever holds the link can read the drop.</strong> If you
             send it over a channel that is already compromised, the encryption did not help. Add a
             passphrase and share that separately.
           </li>
           <li>
-            <strong className="text-chalk">Your writing is identifying.</strong> Details, timing,
+            <strong className="text-chrome">Your writing is identifying.</strong> Details, timing,
             and turn of phrase deanonymise people far more often than technical leaks do.
           </li>
           <li>
-            <strong className="text-chalk">We serve the code that does the encrypting.</strong> A
+            <strong className="text-chrome">We serve the code that does the encrypting.</strong> A
             compromised server could ship malicious JavaScript. That is true of every browser-based
             E2E tool, ours included, which is why the source is public.
           </li>
           <li>
-            <strong className="text-chalk">Lose your key, lose your messages.</strong> There is no
+            <strong className="text-chrome">Lose your key, lose your messages.</strong> There is no
             reset link. That is the cost of us not having a copy.
           </li>
         </ul>
       </section>
 
       <div className="mt-12 flex flex-wrap gap-3">
-        <Link href="/drop" className="btn-primary">
+        <Link href="/drop" className="cmd-primary">
           Send an encrypted drop
         </Link>
-        <Link href="/privacy" className="btn-ghost">
+        <Link href="/privacy" className="cmd">
           What we store
         </Link>
       </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { MOODS } from '@/lib/constants';
 import { SecretCard, type WallSecret } from './SecretCard';
 
@@ -45,7 +45,7 @@ export function WallFeed({
         setHasMore(data.hasMore);
         setPage(nextPage);
       } catch {
-        if (id === requestId.current) setError('Could not load the wall. Try again.');
+        if (id === requestId.current) setError('Query failed. Retry.');
       } finally {
         if (id === requestId.current) setLoading(false);
       }
@@ -64,16 +64,19 @@ export function WallFeed({
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-center gap-2">
-        <div className="flex rounded-full border border-ink-700 bg-ink-850/60 p-1">
+      {/* The filter row is a query bar, so it states the query rather than
+          offering pills that could belong to any feed. */}
+      <div className="mb-4 border border-hairline">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-hairline bg-panel px-2 py-1">
+          <span className="field">Sort</span>
           {(['hot', 'new'] as const).map((option) => (
             <button
               key={option}
               type="button"
               onClick={() => changeFilter(option, mood)}
               aria-pressed={sort === option}
-              className={`rounded-full px-4 py-1.5 text-xs font-medium capitalize transition-colors ${
-                sort === option ? 'bg-violet text-white' : 'text-chalk-dim hover:text-chalk'
+              className={`text-2xs uppercase tracking-[0.1em] ${
+                sort === option ? 'text-amber' : 'text-label hover:text-chrome'
               }`}
             >
               {option}
@@ -81,11 +84,13 @@ export function WallFeed({
           ))}
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-1 px-2 py-1.5">
+          <span className="field mr-1">Class</span>
           <button
             type="button"
             onClick={() => changeFilter(sort, null)}
-            className={`chip ${mood === null ? 'chip-active' : ''}`}
+            aria-pressed={mood === null}
+            className="tag"
           >
             All
           </button>
@@ -94,50 +99,51 @@ export function WallFeed({
               key={m.id}
               type="button"
               onClick={() => changeFilter(sort, mood === m.id ? null : m.id)}
-              className={`chip ${mood === m.id ? 'chip-active' : ''}`}
+              aria-pressed={mood === m.id}
+              className="tag"
+              title={m.label}
             >
-              <span aria-hidden="true">{m.glyph}</span>
-              {m.label}
+              {m.code}
             </button>
           ))}
         </div>
       </div>
 
-      <div aria-live="polite" className="space-y-4">
+      <div aria-live="polite" className="space-y-2">
         {items.length === 0 && !loading && (
-          <div className="panel p-12 text-center">
-            <p className="text-chalk-dim">
-              {mood ? 'Nothing here under that mood yet.' : 'The wall is empty.'}
+          <div className="border border-hairline px-4 py-12 text-center">
+            <p className="text-sm text-label">
+              {mood ? 'No records match that classification.' : 'No records.'}
             </p>
-            <Link href="/confess" className="btn-primary mt-5">
-              Be the first
+            <Link href="/confess" className="cmd-primary mt-4 no-underline">
+              File the first
             </Link>
           </div>
         )}
 
-        {items.map((secret, index) => (
-          <SecretCard key={secret.id} secret={secret} priority={index < 3} />
+        {items.map((secret) => (
+          <SecretCard key={secret.id} secret={secret} />
         ))}
 
         {loading && (
-          <div className="space-y-4" aria-hidden="true">
+          <div className="space-y-2" aria-hidden="true">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="skeleton h-40" />
+              <div key={i} className="skeleton h-28" />
             ))}
           </div>
         )}
       </div>
 
-      {error && <p className="mt-6 text-center text-sm text-ember">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-4 text-center text-sm text-alert">
+          {error}
+        </p>
+      )}
 
       {hasMore && !loading && (
-        <div className="mt-8 flex justify-center">
-          <button
-            type="button"
-            onClick={() => void load(page + 1, sort, mood, true)}
-            className="btn-ghost"
-          >
-            Read more
+        <div className="mt-5 flex justify-center">
+          <button type="button" onClick={() => void load(page + 1, sort, mood, true)} className="cmd">
+            Load more
           </button>
         </div>
       )}

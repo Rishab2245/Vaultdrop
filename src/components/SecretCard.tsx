@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MOODS, PALETTES, REACTIONS, REPORT_REASONS } from '@/lib/constants';
-import { compactNumber, timeAgo } from '@/lib/format';
+import { compactNumber, recordRef, timeAgo } from '@/lib/format';
 import { getReactions, toggleReaction } from '@/lib/local-vault';
 import { renderShareCard, shareCard } from '@/lib/share-card';
 
@@ -18,7 +18,14 @@ export interface WallSecret {
 
 type ReactionCounts = WallSecret['reactions'];
 
-export function SecretCard({ secret, priority = false }: { secret: WallSecret; priority?: boolean }) {
+/**
+ * One record on the Wall.
+ *
+ * The frame is the system talking: reference, classification, age, counters,
+ * all monospace and tabular. The body is the only thing set in serif, because
+ * it is the only thing a person wrote.
+ */
+export function SecretCard({ secret }: { secret: WallSecret; priority?: boolean }) {
   const [counts, setCounts] = useState<ReactionCounts>(secret.reactions);
   const [mine, setMine] = useState<string[]>([]);
   const [reporting, setReporting] = useState(false);
@@ -29,7 +36,8 @@ export function SecretCard({ secret, priority = false }: { secret: WallSecret; p
   useEffect(() => setMine(getReactions(secret.id)), [secret.id]);
 
   const mood = useMemo(() => MOODS.find((m) => m.id === secret.mood) ?? MOODS[0], [secret.mood]);
-  const palette = PALETTES[secret.palette] ?? PALETTES[0];
+  const channel = PALETTES[secret.palette] ?? PALETTES[0];
+  const ref = useMemo(() => recordRef(secret.id), [secret.id]);
 
   const react = useCallback(
     async (reactionId: string) => {
@@ -62,15 +70,17 @@ export function SecretCard({ secret, priority = false }: { secret: WallSecret; p
       const blob = await renderShareCard({
         body: secret.body,
         mood: mood.label,
+        code: mood.code,
+        ref,
         palette: secret.palette,
       });
-      await shareCard(blob, `vaultdrop-${secret.id}.png`, secret.body);
+      await shareCard(blob, `vaultdrop-${ref}.png`, secret.body);
     } catch {
-      // Canvas unavailable; nothing useful to say beyond letting the button reset.
+      // Canvas unavailable; nothing useful to say beyond letting the control reset.
     } finally {
       setSharing(false);
     }
-  }, [mood.label, secret.body, secret.id, secret.palette]);
+  }, [mood.code, mood.label, ref, secret.body, secret.palette]);
 
   const onReport = useCallback(
     async (reason: string) => {
@@ -91,109 +101,91 @@ export function SecretCard({ secret, priority = false }: { secret: WallSecret; p
 
   if (reported) {
     return (
-      <article className="panel flex min-h-[180px] flex-col items-center justify-center gap-2 p-8 text-center">
-        <p className="text-sm text-chalk-dim">Reported. Thank you.</p>
-        <p className="text-xs text-chalk-faint">We look at everything that gets flagged.</p>
+      <article className="rec">
+        <div className="rec-head">
+          <span className="normal-case">REC {ref}</span>
+          <span className="text-alert">FLAGGED</span>
+        </div>
+        <div className="rec-body text-sm text-label">
+          Reported. Flagged records are reviewed, and hidden automatically once several people
+          agree.
+        </div>
       </article>
     );
   }
 
   return (
-    <article
-      className="group relative animate-fade-up overflow-hidden rounded-xl2 border border-ink-700/70 bg-ink-900/60 backdrop-blur-xl transition-colors hover:border-ink-600"
-      style={priority ? undefined : { animationDelay: '60ms' }}
-    >
-      {/* The palette shows as a spine rather than a fill, so the wall stays calm
-          while each secret keeps the colour it will have as a share card. */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-y-0 left-0 w-[3px]"
-        style={{ background: `linear-gradient(${palette.from}, ${palette.to})` }}
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -left-24 -top-24 h-48 w-48 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-25"
-        style={{ background: palette.from }}
-      />
-
-      <div className="relative p-5 pl-6 sm:p-6 sm:pl-7">
-        <div className="mb-3 flex items-center gap-2 text-xs text-chalk-faint">
-          <span aria-hidden="true">{mood.glyph}</span>
-          <span className="font-medium text-chalk-dim">{mood.label}</span>
-          <span aria-hidden="true">·</span>
-          <time dateTime={secret.createdAt}>{timeAgo(secret.createdAt)}</time>
-          {secret.views > 0 && (
-            <>
-              <span aria-hidden="true">·</span>
-              <span>{compactNumber(secret.views)} read</span>
-            </>
-          )}
-        </div>
-
-        <p className="whitespace-pre-wrap text-pretty text-[17px] leading-relaxed text-chalk sm:text-lg">
-          {secret.body}
-        </p>
-
-        <div className="mt-5 flex flex-wrap items-center gap-2">
-          {REACTIONS.map((reaction) => {
-            const active = mine.includes(reaction.id);
-            const count = counts[reaction.id as keyof ReactionCounts];
-            return (
-              <button
-                key={reaction.id}
-                type="button"
-                onClick={() => react(reaction.id)}
-                aria-pressed={active}
-                aria-label={`${reaction.label}${count ? `, ${count}` : ''}`}
-                className={`chip ${active ? 'chip-active' : ''}`}
-              >
-                <span aria-hidden="true">{reaction.glyph}</span>
-                <span className="hidden sm:inline">{reaction.label}</span>
-                {count > 0 && <span className="tabular-nums">{compactNumber(count)}</span>}
-              </button>
-            );
-          })}
-
-          <div className="ml-auto flex items-center gap-1">
-            <button
-              type="button"
-              onClick={onShare}
-              disabled={sharing}
-              className="btn-quiet"
-              aria-label="Share as an image"
-            >
-              {sharing ? 'Rendering…' : 'Share'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setReporting((v) => !v)}
-              className="btn-quiet"
-              aria-expanded={reporting}
-              aria-label="Report this secret"
-            >
-              Report
-            </button>
-          </div>
-        </div>
-
-        {reporting && (
-          <div className="mt-4 rounded-2xl border border-ink-700 bg-ink-950/60 p-3">
-            <p className="label mb-2">Why are you reporting this?</p>
-            <div className="flex flex-wrap gap-2">
-              {REPORT_REASONS.map((reason) => (
-                <button
-                  key={reason.id}
-                  type="button"
-                  onClick={() => onReport(reason.id)}
-                  className="chip hover:border-ember/50 hover:text-ember"
-                >
-                  {reason.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+    <article className="rec">
+      <div className="rec-head">
+        <span className="normal-case" style={{ color: channel.hex }}>
+          REC {ref}
+        </span>
+        <span>{mood.code}</span>
+        <span className="ml-auto">{timeAgo(secret.createdAt)}</span>
+        {secret.views > 0 && <span>{compactNumber(secret.views)} READ</span>}
       </div>
+
+      <div className="rec-body">
+        <p className="prose-human">{secret.body}</p>
+      </div>
+
+      <div className="rec-foot">
+        {REACTIONS.map((reaction) => {
+          const active = mine.includes(reaction.id);
+          const count = counts[reaction.id as keyof ReactionCounts];
+          return (
+            <button
+              key={reaction.id}
+              type="button"
+              onClick={() => react(reaction.id)}
+              aria-pressed={active}
+              aria-label={`${reaction.label}${count ? `, ${count}` : ''}`}
+              className="tally"
+            >
+              {reaction.code} {compactNumber(count)}
+            </button>
+          );
+        })}
+
+        <span className="ml-auto flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onShare}
+            disabled={sharing}
+            className="cmd-bare"
+            aria-label="Export this record as an image"
+          >
+            {sharing ? 'RENDERING' : 'EXPORT'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setReporting((v) => !v)}
+            className="cmd-bare"
+            aria-expanded={reporting}
+            aria-label="Flag this record"
+          >
+            FLAG
+          </button>
+        </span>
+      </div>
+
+      {reporting && (
+        <div className="border-t border-hairline bg-panel px-2 py-2">
+          <p className="field mb-1.5">Reason for flag</p>
+          <div className="flex flex-wrap gap-1">
+            {REPORT_REASONS.map((reason) => (
+              <button
+                key={reason.id}
+                type="button"
+                onClick={() => onReport(reason.id)}
+                className="tag cmd-danger"
+              >
+                {reason.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </article>
   );
 }

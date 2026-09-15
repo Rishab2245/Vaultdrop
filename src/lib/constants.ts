@@ -1,12 +1,17 @@
 /** Shared vocabulary for the app. Kept in one place so the UI and the API agree. */
 
+/**
+ * Classifications. Rendered as record fields, so they read as terminal codes
+ * rather than emoji chips - a system labels its records, it does not decorate
+ * them.
+ */
 export const MOODS = [
-  { id: 'confession', label: 'Confession', glyph: '🕯' },
-  { id: 'regret', label: 'Regret', glyph: '🥀' },
-  { id: 'crush', label: 'Crush', glyph: '💘' },
-  { id: 'fear', label: 'Fear', glyph: '🌑' },
-  { id: 'joy', label: 'Joy', glyph: '✦' },
-  { id: 'rage', label: 'Rage', glyph: '🔥' },
+  { id: 'confession', label: 'Confession', code: 'CNF' },
+  { id: 'regret', label: 'Regret', code: 'RGT' },
+  { id: 'crush', label: 'Crush', code: 'CRS' },
+  { id: 'fear', label: 'Fear', code: 'FER' },
+  { id: 'joy', label: 'Joy', code: 'JOY' },
+  { id: 'rage', label: 'Rage', code: 'RAG' },
 ] as const;
 
 export type MoodId = (typeof MOODS)[number]['id'];
@@ -18,23 +23,27 @@ export function isMood(value: unknown): value is MoodId {
 }
 
 /**
- * Gradient presets for share cards. These are the whole growth engine: a secret
- * that looks good as a screenshot travels, and one that doesn't, doesn't.
+ * Classification channels.
+ *
+ * Terminal phosphor colours rather than gradients: one flat signal colour per
+ * record, used on the record's rule and on its share card. A gradient would be
+ * the first thing to break the "this is a system, not a feed" read.
  */
 export const PALETTES = [
-  { from: '#7C5CFF', to: '#F45D9E', name: 'Nocturne' },
-  { from: '#3BE8B0', to: '#2B8CFF', name: 'Cyan' },
-  { from: '#FF6B4A', to: '#FFC24A', name: 'Ember' },
-  { from: '#B06CFF', to: '#4B2FD6', name: 'Orchid' },
-  { from: '#1F2937', to: '#4B5563', name: 'Graphite' },
-  { from: '#FF5F8F', to: '#FFB36B', name: 'Dusk' },
+  { hex: '#FFA02F', name: 'Amber' },
+  { hex: '#00B96B', name: 'Green' },
+  { hex: '#F23645', name: 'Red' },
+  { hex: '#2FD5E8', name: 'Cyan' },
+  { hex: '#9B7BFF', name: 'Violet' },
+  { hex: '#E8ECF4', name: 'Chrome' },
 ] as const;
 
+/** Counters, named as fields. `code` is what appears in a record footer. */
 export const REACTIONS = [
-  { id: 'felt', label: 'Felt that', glyph: '🫀', column: 'reactFelt' },
-  { id: 'hug', label: 'Sending love', glyph: '🫂', column: 'reactHug' },
-  { id: 'whoa', label: 'No way', glyph: '👁', column: 'reactWhoa' },
-  { id: 'same', label: 'Same', glyph: '🪞', column: 'reactSame' },
+  { id: 'felt', label: 'Felt that', code: 'FELT', column: 'reactFelt' },
+  { id: 'hug', label: 'Sending love', code: 'HELD', column: 'reactHug' },
+  { id: 'whoa', label: 'No way', code: 'WHOA', column: 'reactWhoa' },
+  { id: 'same', label: 'Same', code: 'SAME', column: 'reactSame' },
 ] as const;
 
 export type ReactionId = (typeof REACTIONS)[number]['id'];

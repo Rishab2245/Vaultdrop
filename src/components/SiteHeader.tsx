@@ -5,21 +5,22 @@ import { usePathname } from 'next/navigation';
 import { Wordmark } from './Brand';
 
 const NAV = [
-  { href: '/wall', label: 'The Wall' },
-  { href: '/drop', label: 'Send a drop' },
-  { href: '/inbox', label: 'My inbox' },
-  { href: '/vault', label: 'My vault' },
+  { href: '/wall', label: 'Wall', key: 'F1' },
+  { href: '/confess', label: 'Confess', key: 'F2' },
+  { href: '/drop', label: 'Drop', key: 'F3' },
+  { href: '/inbox', label: 'Inbox', key: 'F4' },
+  { href: '/vault', label: 'Vault', key: 'F5' },
 ];
 
 export function SiteHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-ink-800/80 bg-ink-950/70 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-hairline bg-void">
+      <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-2.5">
         <Wordmark />
 
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
+        <nav className="flex items-center gap-0.5 overflow-x-auto" aria-label="Main">
           {NAV.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href + '/');
             return (
@@ -27,52 +28,27 @@ export function SiteHeader() {
                 key={item.href}
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
-                className={`rounded-full px-4 py-2 text-sm transition-colors ${
-                  active
-                    ? 'bg-ink-800 text-chalk'
-                    : 'text-chalk-dim hover:bg-ink-850/70 hover:text-chalk'
+                className={`whitespace-nowrap px-2 py-1 text-2xs uppercase tracking-[0.12em] no-underline ${
+                  active ? 'text-amber' : 'text-label hover:text-chrome'
                 }`}
               >
-                {item.label}
+                <span className="hidden text-label/60 sm:inline">{item.key}:</span> {item.label}
               </Link>
             );
           })}
         </nav>
-
-        <Link href="/confess" className="btn-primary hidden sm:inline-flex">
-          Confess
-        </Link>
-
-        {/* Mobile: the nav collapses to the two things people actually came for. */}
-        <div className="flex items-center gap-2 sm:hidden">
-          <Link href="/wall" className="btn-ghost px-4 py-2 text-xs">
-            Wall
-          </Link>
-          <Link href="/confess" className="btn-primary px-4 py-2 text-xs">
-            Confess
-          </Link>
-        </div>
       </div>
 
-      <nav
-        className="flex gap-1 overflow-x-auto border-t border-ink-800/60 px-4 py-2 md:hidden"
-        aria-label="Sections"
-      >
-        {NAV.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + '/');
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs transition-colors ${
-                active ? 'bg-ink-800 text-chalk' : 'text-chalk-faint hover:text-chalk-dim'
-              }`}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+      {/* The system's standing declaration. It states a fact about the
+          architecture, so it belongs in the chrome rather than in marketing. */}
+      <div className="mx-auto max-w-4xl px-4 pb-2">
+        <div className="statusbar">
+          <span>VAULTDROP // ANONYMOUS RECORD SYSTEM</span>
+          <span className="hidden sm:inline">
+            <span className="text-sealed">AES-256-GCM</span> · KEY NOT HELD
+          </span>
+        </div>
+      </div>
     </header>
   );
 }

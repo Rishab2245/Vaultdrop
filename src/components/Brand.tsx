@@ -1,30 +1,33 @@
 import Link from 'next/link';
 
-/** The mark: a keyhole cut out of a solid block. Reads at 16px, which matters. */
-export function Mark({ className = 'h-7 w-7' }: { className?: string }) {
+/**
+ * The mark is a redaction bar with one character still showing through.
+ *
+ * It is the product in one glyph: something is written here, and you are not
+ * going to read it.
+ */
+export function Mark({ className = 'h-5 w-5' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
-      <defs>
-        <linearGradient id="vd-mark" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#A08CFF" />
-          <stop offset="100%" stopColor="#4B2FD6" />
-        </linearGradient>
-      </defs>
-      <rect x="2" y="2" width="28" height="28" rx="9" fill="url(#vd-mark)" />
-      <path
-        d="M16 9.5a4 4 0 0 0-2.2 7.34L12.4 23h7.2l-1.4-6.16A4 4 0 0 0 16 9.5Z"
-        fill="#07060B"
-      />
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <rect x="1" y="6" width="22" height="12" fill="#E8ECF4" />
+      <rect x="4" y="9" width="3" height="6" fill="#0A0E1A" />
+      <rect x="9" y="9" width="2" height="6" fill="#0A0E1A" />
+      <rect x="13" y="9" width="4" height="6" fill="#0A0E1A" />
+      <rect x="19" y="9" width="1.5" height="6" fill="#FFA02F" />
     </svg>
   );
 }
 
 export function Wordmark({ href = '/' }: { href?: string }) {
   return (
-    <Link href={href} className="group inline-flex items-center gap-2.5" aria-label="VaultDrop home">
-      <Mark className="h-7 w-7 transition-transform duration-300 group-hover:scale-105" />
-      <span className="text-[15px] font-semibold tracking-tight text-chalk">
-        Vault<span className="text-chalk-dim">Drop</span>
+    <Link
+      href={href}
+      className="group inline-flex items-center gap-2.5 no-underline"
+      aria-label="VaultDrop home"
+    >
+      <Mark />
+      <span className="text-sm uppercase tracking-[0.18em] text-chrome">
+        Vault<span className="text-label group-hover:text-amber">drop</span>
       </span>
     </Link>
   );

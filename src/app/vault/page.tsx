@@ -9,12 +9,12 @@ export const metadata: Metadata = {
 
 export default function VaultPage() {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
-      <header className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">My vault</h1>
-        <p className="mt-2 text-pretty leading-relaxed text-chalk-dim">
+    <div className="mx-auto max-w-3xl px-4 py-10">
+      <header className="mb-6">
+        <h1 className="font-serif text-[2rem] leading-tight text-chrome">My vault</h1>
+        <p className="mt-2 max-w-xl text-base leading-relaxed text-body">
           This page reads your browser, not our database. We could not build it server-side if we
-          wanted to - nothing on our end links these to you.
+          wanted to — nothing on our end links these records to you.
         </p>
       </header>
 

@@ -19,7 +19,7 @@ export function CopyField({ value, className = '' }: { value: string; className?
     } catch {
       // Clipboard API needs permission or a secure context. Select the text so
       // the user can still copy it by hand rather than hitting a dead button.
-      const input = document.getElementById('copy-field-input') as HTMLInputElement | null;
+      const input = document.getElementById('copy-input-input') as HTMLInputElement | null;
       input?.select();
     }
   }, [value]);
@@ -27,14 +27,14 @@ export function CopyField({ value, className = '' }: { value: string; className?
   return (
     <div className={`flex gap-2 ${className}`}>
       <input
-        id="copy-field-input"
+        id="copy-input-input"
         readOnly
         value={value}
         onFocus={(e) => e.currentTarget.select()}
-        className="field flex-1 font-mono text-xs"
+        className="input flex-1 font-mono text-xs"
         aria-label="Shareable link"
       />
-      <button type="button" onClick={copy} className="btn-primary shrink-0 px-4">
+      <button type="button" onClick={copy} className="cmd-primary shrink-0 px-4">
         {copied ? 'Copied' : 'Copy'}
       </button>
     </div>

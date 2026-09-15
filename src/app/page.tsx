@@ -1,31 +1,27 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { compactNumber } from '@/lib/format';
-import { Mark } from '@/components/Brand';
 
 export const dynamic = 'force-dynamic';
 
 const PATHS = [
   {
     href: '/confess',
-    eyebrow: 'Public',
-    title: 'Confess to the Wall',
-    body: 'Say the thing out loud, to everyone, with nothing attached to your name. Other people say "same" more often than you would think.',
-    cta: 'Say it',
+    code: 'WALL',
+    title: 'File a public record',
+    body: 'Say it out loud, to everyone, with nothing attached to your name. Other people say "same" more often than you would think.',
   },
   {
     href: '/drop',
-    eyebrow: 'One person',
-    title: 'Send a private drop',
-    body: 'Encrypted in your browser, opened once, then destroyed. The key travels in the link, which means it never reaches us at all.',
-    cta: 'Encrypt something',
+    code: 'DROP',
+    title: 'Send an encrypted drop',
+    body: 'For one person. Encrypted on your device, opened once, then destroyed. The key rides in the link fragment and never reaches this system.',
   },
   {
     href: '/inbox',
-    eyebrow: 'Your link',
-    title: 'Collect anonymous messages',
-    body: 'Put a link in your bio and find out what people actually think. Only your device can decrypt what comes back.',
-    cta: 'Get my link',
+    code: 'INBOX',
+    title: 'Open an anonymous inbox',
+    body: 'Publish a handle and find out what people actually think. Only your device holds the key that decrypts what comes back.',
   },
 ];
 
@@ -54,108 +50,102 @@ export default async function HomePage() {
   const stats = await getStats();
 
   return (
-    <div>
-      <section className="relative overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-0 h-[420px] w-[820px] -translate-x-1/2 animate-glow rounded-full bg-violet/20 blur-[130px]"
-        />
+    <div className="mx-auto max-w-4xl px-4 py-10">
+      <section>
+        {/*
+          The headline is the thesis: the system can print the sentence, and
+          cannot print who said it. The bar is real - it marks the one field
+          nothing in this architecture can fill.
+        */}
+        <h1 className="font-serif text-[clamp(2rem,6.5vw,3.4rem)] font-normal leading-[1.08] text-chrome">
+          Say it without{' '}
+          <span className="redact" aria-label="saying who">
+            saying who
+          </span>
+        </h1>
 
-        <div className="relative mx-auto max-w-4xl px-4 pb-16 pt-20 text-center sm:px-6 sm:pb-24 sm:pt-28">
-          <Mark className="mx-auto h-14 w-14" />
+        <p className="mt-5 max-w-xl text-base leading-relaxed text-body">
+          A record system for the things you cannot put your name on. No account, no email, no
+          phone number, no IP log — and for anything private, no key on our side to read it with.
+        </p>
 
-          <h1 className="mt-8 text-balance text-4xl font-semibold leading-[1.08] tracking-tight sm:text-6xl">
-            Say it without
-            <br />
-            saying who.
-          </h1>
+        <div className="mt-6 flex flex-wrap gap-2">
+          <Link href="/wall" className="cmd-primary no-underline">
+            F1: Read the wall
+          </Link>
+          <Link href="/confess" className="cmd no-underline">
+            F2: File a record
+          </Link>
+        </div>
 
-          <p className="mx-auto mt-6 max-w-xl text-pretty text-base leading-relaxed text-chalk-dim sm:text-lg">
-            A place for the things you cannot put your name on. No account, no email, no phone
-            number - and for anything private, no way for us to read it even if someone made us try.
+        {stats.secrets > 0 && (
+          <p className="mt-5 text-2xs uppercase tracking-[0.12em] tabular text-label">
+            {compactNumber(stats.secrets)} records on file
+            {stats.reactions > 0 && ` · ${compactNumber(stats.reactions)} marked "same"`}
           </p>
-
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/wall" className="btn-primary px-7 py-3">
-              Read the Wall
-            </Link>
-            <Link href="/confess" className="btn-ghost px-7 py-3">
-              Confess something
-            </Link>
-          </div>
-
-          {stats.secrets > 0 && (
-            <p className="mt-8 text-sm text-chalk-faint">
-              {compactNumber(stats.secrets)} secrets told
-              {stats.reactions > 0 && ` · ${compactNumber(stats.reactions)} people said "same"`}
-            </p>
-          )}
-        </div>
+        )}
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
-        <div className="grid gap-4 md:grid-cols-3">
-          {PATHS.map((path) => (
-            <Link
-              key={path.href}
-              href={path.href}
-              className="group panel flex flex-col p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-violet/40"
-            >
-              <span className="label">{path.eyebrow}</span>
-              <h2 className="mt-3 text-xl font-semibold tracking-tight">{path.title}</h2>
-              <p className="mt-2.5 flex-1 text-pretty text-sm leading-relaxed text-chalk-dim">
-                {path.body}
-              </p>
-              <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-violet-soft">
-                {path.cta}
-                <span
-                  aria-hidden="true"
-                  className="transition-transform duration-300 group-hover:translate-x-1"
-                >
-                  →
-                </span>
-              </span>
-            </Link>
-          ))}
-        </div>
+      <section className="mt-12 grid gap-2 md:grid-cols-3">
+        {PATHS.map((path) => (
+          <Link
+            key={path.href}
+            href={path.href}
+            className="group border border-hairline no-underline hover:border-amber"
+          >
+            <div className="border-b border-hairline bg-panel px-2 py-1">
+              <span className="field group-hover:text-amber">{path.code}</span>
+            </div>
+            <div className="p-3">
+              <h2 className="font-serif text-read text-chrome">{path.title}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-label">{path.body}</p>
+            </div>
+          </Link>
+        ))}
       </section>
 
-      <section className="mx-auto max-w-4xl px-4 pb-24 sm:px-6">
-        <div className="panel p-8 sm:p-10">
-          <div className="sealed mb-5">What we actually store</div>
-          <h2 className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
-            Most anonymous apps mean &ldquo;anonymous to other users&rdquo;.
+      <section className="mt-12 border border-hairline">
+        <div className="rec-head">
+          <span>SYSTEM · DATA HELD</span>
+          <span className="ml-auto text-sealed">VERIFIABLE</span>
+        </div>
+
+        <div className="p-4">
+          <h2 className="font-serif text-[1.5rem] leading-tight text-chrome">
+            Most anonymous apps mean{' '}
+            <span className="italic">anonymous to other users</span>.
           </h2>
-          <p className="mt-4 text-pretty leading-relaxed text-chalk-dim">
+
+          <p className="mt-3 max-w-2xl text-base leading-relaxed text-body">
             They still know your device, your IP, your phone number, and exactly which confession
-            you wrote. We built this the other way around. Private drops and inbox messages are
-            encrypted before they leave your browser, so what reaches our database is bytes we have
-            no key for. Not policy - arithmetic.
+            you wrote. This is built the other way around. Private drops and inbox messages are
+            encrypted before they leave your browser, so what reaches this database is bytes we
+            hold no key for. Not policy — arithmetic.
           </p>
 
-          <dl className="mt-8 grid gap-6 sm:grid-cols-2">
+          <dl className="mt-6 grid gap-x-8 gap-y-4 sm:grid-cols-2">
             <div>
-              <dt className="text-sm font-medium text-chalk">Never collected</dt>
-              <dd className="mt-2 text-sm leading-relaxed text-chalk-faint">
+              <dt className="field">Never collected</dt>
+              <dd className="mt-1.5 text-sm leading-relaxed text-label">
                 Accounts, emails, phone numbers, IP logs, device fingerprints, third-party
                 analytics, advertising identifiers.
               </dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-chalk">Kept, and why</dt>
-              <dd className="mt-2 text-sm leading-relaxed text-chalk-faint">
-                Wall posts, because they are public on purpose. Ciphertext we cannot read, until it
-                expires. Reaction counts, with no record of who tapped them.
+              <dt className="field">Held, and why</dt>
+              <dd className="mt-1.5 text-sm leading-relaxed text-label">
+                Wall records, because they are public on purpose. Ciphertext we cannot read, until
+                it expires. Counter totals, with no record of who tapped them.
               </dd>
             </div>
           </dl>
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/how-it-works" className="btn-ghost">
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Link href="/how-it-works" className="cmd no-underline">
               How the encryption works
             </Link>
-            <Link href="/privacy" className="btn-quiet">
-              Read the specifics →
+            <Link href="/privacy" className="cmd-bare no-underline">
+              Full inventory →
             </Link>
           </div>
         </div>

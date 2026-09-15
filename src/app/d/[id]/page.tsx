@@ -13,7 +13,7 @@ export default async function DropPage({ params }: { params: Promise<{ id: strin
   const { id } = await params;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-16">
+    <div className="mx-auto max-w-3xl px-4 py-12">
       <DropReader id={id} />
     </div>
   );

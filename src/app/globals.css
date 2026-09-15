@@ -3,17 +3,18 @@
 @tailwind utilities;
 
 /*
-  VaultDrop visual language.
+  VaultDrop — declassified terminal.
 
-  The old build used an 8-bit pixel theme. It was charming and it capped the
-  product at "hackathon demo" - nobody confesses something true to a page that
-  looks like a joke. This replaces it with something closer to a late-night
-  interface: near-black, high contrast, one accent, and a lot of restraint.
+  The system speaks in monospace. The human speaks in serif. The redaction bar
+  marks every place the system cannot read what the human wrote.
+
+  Single-theme by decision, not omission: a terminal in light mode is not a
+  terminal. Every colour is painted explicitly so the page never borrows a
+  ground from its host.
 */
 
 :root {
   color-scheme: dark;
-  --ring: 124 92 255;
 }
 
 @layer base {
@@ -22,28 +23,23 @@
   }
 
   body {
-    @apply bg-ink-950 font-sans text-chalk antialiased;
-    background-image:
-      radial-gradient(900px 500px at 12% -10%, rgba(124, 92, 255, 0.16), transparent 60%),
-      radial-gradient(700px 420px at 92% 4%, rgba(59, 232, 176, 0.08), transparent 62%);
-    background-attachment: fixed;
+    @apply bg-void font-mono text-base text-body antialiased;
     min-height: 100dvh;
   }
 
   ::selection {
-    background: rgba(124, 92, 255, 0.35);
-    color: #fff;
+    background: #ffa02f;
+    color: #0a0e1a;
   }
 
   :focus-visible {
-    @apply outline-none ring-2 ring-offset-2 ring-offset-ink-950;
-    --tw-ring-color: rgb(var(--ring) / 0.9);
+    outline: 1px solid #ffa02f;
+    outline-offset: 2px;
   }
 
-  /* Firefox */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #2f2746 transparent;
+    scrollbar-color: #2a3050 transparent;
   }
 
   ::-webkit-scrollbar {
@@ -51,107 +47,206 @@
     height: 10px;
   }
   ::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-ink-600;
+    @apply bg-hairline;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
-
-  textarea {
-    field-sizing: content;
-  }
 }
 
 @layer components {
-  /* Film grain. Cheap, static, and it stops large dark areas reading as flat. */
-  .grain::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    pointer-events: none;
-    opacity: 0.035;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* ---------------- the redaction bar ---------------- */
+
+  /*
+    Covering text with the foreground colour is what redaction physically is,
+    so the bar is chrome on the void rather than black-on-white. Text stays in
+    the DOM for screen readers, hidden behind `color: transparent` and an
+    aria-label on the wrapper - never removed, because the point is that
+    something IS there and cannot be read.
+  */
+  .redact {
+    @apply inline-block bg-chrome text-transparent;
+    padding: 0 0.22em;
+    user-select: none;
+    text-decoration: none;
   }
 
-  .panel {
-    @apply rounded-xl2 border border-ink-700/70 bg-ink-900/60 backdrop-blur-xl;
+  .redact-amber {
+    @apply redact bg-amber;
   }
 
-  .hairline {
-    @apply border-ink-700/60;
+  /* A block-level withheld field, for ciphertext we are showing as itself. */
+  .redact-block {
+    @apply block w-full bg-chrome;
+    height: 0.95em;
+    margin: 0.32em 0;
   }
 
-  .btn {
-    @apply inline-flex select-none items-center justify-center gap-2 rounded-full px-5 py-2.5
-           text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed
-           disabled:opacity-40;
+  /* ---------------- system chrome ---------------- */
+
+  .rule {
+    @apply border-hairline;
   }
 
-  .btn-primary {
-    @apply btn bg-violet text-white shadow-[0_0_0_0_rgba(124,92,255,0.6)]
-           hover:bg-violet-soft hover:shadow-[0_8px_30px_-6px_rgba(124,92,255,0.7)]
-           active:scale-[0.98];
-  }
-
-  .btn-ghost {
-    @apply btn border border-ink-700 bg-ink-850/60 text-chalk-dim
-           hover:border-ink-600 hover:text-chalk active:scale-[0.98];
-  }
-
-  .btn-quiet {
-    @apply btn px-3 py-1.5 text-chalk-faint hover:text-chalk-dim;
+  .statusbar {
+    @apply flex items-center justify-between gap-4 border border-hairline
+           px-2 py-1 text-2xs uppercase tracking-[0.1em] text-label;
   }
 
   .field {
-    @apply w-full rounded-2xl border border-ink-700 bg-ink-900/80 px-4 py-3 text-chalk
-           placeholder:text-chalk-faint focus:border-violet/70 focus:outline-none
-           focus:ring-2 focus:ring-violet/25 transition-colors;
+    @apply text-2xs uppercase tracking-[0.13em] text-label;
   }
 
-  .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-ink-700 bg-ink-850/70
-           px-3 py-1.5 text-xs font-medium text-chalk-dim transition-all
-           hover:border-ink-600 hover:text-chalk;
+  .caret::after {
+    content: '_';
+    @apply animate-blink text-amber;
   }
 
-  .chip-active {
-    @apply border-violet/60 bg-violet/15 text-chalk;
+  /* ---------------- record ---------------- */
+
+  .rec {
+    @apply border border-hairline bg-void;
   }
 
-  /* The encrypted-state marker. Used anywhere the server genuinely cannot read. */
-  .sealed {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-mint/25 bg-mint/10
-           px-2.5 py-1 text-[11px] font-medium tracking-wide text-mint;
+  .rec-head {
+    @apply flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-hairline
+           bg-panel px-2 py-1 text-2xs uppercase tracking-[0.1em] text-label;
   }
 
-  .label {
-    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-chalk-faint;
+  .rec-body {
+    @apply px-3 py-3.5;
+  }
+
+  /* The human register. Serif, and the only place text is set for reading. */
+  .prose-human {
+    @apply whitespace-pre-wrap break-words font-serif text-read text-chrome;
+    text-wrap: pretty;
+  }
+
+  .rec-foot {
+    @apply flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-hairline
+           px-2 py-1 text-2xs uppercase tracking-[0.08em] text-label;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------------- controls ---------------- */
+
+  /*
+    Bracketed labels rather than buttons with fills. A terminal's affordance is
+    the bracket, and it keeps amber off large surfaces.
+  */
+  .cmd {
+    @apply inline-flex select-none items-center gap-2 border border-hairline
+           bg-void px-3 py-1.5 text-xs uppercase tracking-[0.1em] text-body
+           transition-none disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .cmd:hover:not(:disabled) {
+    @apply border-amber text-amber;
+  }
+
+  .cmd-primary {
+    @apply cmd border-amber text-amber;
+  }
+
+  .cmd-primary:hover:not(:disabled) {
+    @apply bg-amber text-void;
+  }
+
+  .cmd-danger:hover:not(:disabled) {
+    @apply border-alert text-alert;
+  }
+
+  .cmd-bare {
+    @apply inline-flex select-none items-center gap-1.5 border-0 bg-transparent
+           px-1 py-0.5 text-2xs uppercase tracking-[0.1em] text-label;
+  }
+
+  .cmd-bare:hover:not(:disabled) {
+    @apply text-chrome;
+  }
+
+  /* Counters read as data, so they are tabular and never animate. */
+  .tally {
+    @apply inline-flex select-none items-center gap-1.5 border border-transparent
+           px-1.5 py-0.5 text-2xs uppercase tracking-[0.08em] text-label;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tally:hover:not(:disabled) {
+    @apply border-hairline text-chrome;
+  }
+
+  .tally[aria-pressed='true'] {
+    @apply border-amber text-amber;
+  }
+
+  /* ---------------- input ---------------- */
+
+  .input {
+    @apply w-full border border-hairline bg-panel px-3 py-2.5 font-mono text-base
+           text-chrome placeholder:text-label;
+  }
+
+  .input:focus {
+    @apply border-amber outline-none;
+  }
+
+  /* Composing a confession is the one place the human register applies. */
+  .input-human {
+    @apply input font-serif text-read;
+  }
+
+  .tag {
+    @apply inline-flex select-none items-center gap-1.5 border border-hairline
+           px-2 py-1 text-2xs uppercase tracking-[0.1em] text-label;
+  }
+
+  .tag:hover:not(:disabled) {
+    @apply text-chrome;
+  }
+
+  .tag[aria-pressed='true'] {
+    @apply border-amber text-amber;
+  }
+
+  /* ---------------- notices ---------------- */
+
+  .notice {
+    @apply border px-3 py-2.5 text-sm;
+  }
+
+  .notice-sealed {
+    @apply notice border-sealed/40 text-sealed;
+  }
+
+  .notice-alert {
+    @apply notice border-alert/50 text-alert;
+  }
+
+  .stamp {
+    @apply inline-flex items-center gap-1.5 border border-sealed px-2 py-0.5
+           text-2xs uppercase tracking-[0.14em] text-sealed;
   }
 
   .skeleton {
-    @apply rounded-2xl bg-gradient-to-r from-ink-850 via-ink-800 to-ink-850
-           bg-[length:200%_100%] animate-shimmer;
+    @apply border border-hairline bg-panel;
   }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-  .text-pretty {
-    text-wrap: pretty;
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 
-  /* Respect people who asked the OS to stop moving things. */
+  /* Nothing here eases. State flips are instant by design; the only motion in
+     the product is the caret and an 80ms flash when a counter changes. */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
+      animation: none !important;
+      transition: none !important;
     }
   }
 }

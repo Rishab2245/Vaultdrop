@@ -33,7 +33,7 @@ export default async function SendPage({ params }: { params: Promise<{ handle: s
   if (!inbox) notFound();
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-12 sm:px-6 sm:py-20">
+    <div className="mx-auto max-w-2xl px-4 py-14">
       <InboxSender handle={inbox.handle} publicKey={inbox.publicKey} />
     </div>
   );

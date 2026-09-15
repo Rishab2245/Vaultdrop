@@ -33,6 +33,23 @@ export function timeUntil(iso: string, now: number = Date.now()): string {
   return `${Math.round(seconds / 86400)} days`;
 }
 
+/**
+ * A short, stable record label for a database id.
+ *
+ * Purely presentational - the system displays records by reference, not by
+ * cuid, and "REC 0x2F91" carries the right weight where a raw cuid reads as
+ * debug output. Derived deterministically so the same secret always shows the
+ * same reference.
+ */
+export function recordRef(id: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < id.length; i++) {
+    hash ^= id.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return `0x${(hash & 0xffff).toString(16).toUpperCase().padStart(4, '0')}`;
+}
+
 export function compactNumber(value: number): string {
   if (value < 1000) return String(value);
   if (value < 1_000_000) return `${(value / 1000).toFixed(value < 10_000 ? 1 : 0)}k`;

@@ -51,7 +51,7 @@ export default function PrivacyPage() {
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
       <header className="mb-14">
         <h1 className="text-balance text-4xl font-semibold tracking-tight">What we store</h1>
-        <p className="mt-4 max-w-xl text-pretty leading-relaxed text-chalk-dim">
+        <p className="mt-4 max-w-xl leading-relaxed text-body">
           Not a policy - an inventory. This is every field in the database, and the list is short
           enough to print.
         </p>
@@ -61,11 +61,11 @@ export default function PrivacyPage() {
         {TABLES.map((table) => (
           <section key={table.name}>
             <h2 className="text-lg font-semibold tracking-tight">{table.name}</h2>
-            <dl className="mt-4 divide-y divide-ink-800 border-y border-ink-800">
-              {table.fields.map(([field, why]) => (
-                <div key={field} className="grid gap-1 py-3.5 sm:grid-cols-[minmax(0,1fr)_1.4fr] sm:gap-6">
-                  <dt className="text-sm font-medium text-chalk">{field}</dt>
-                  <dd className="text-sm leading-relaxed text-chalk-faint">{why}</dd>
+            <dl className="mt-4 divide-y divide-hairline border-y border-hairline">
+              {table.fields.map(([fieldName, why]) => (
+                <div key={fieldName} className="grid gap-1 py-3.5 sm:grid-cols-[minmax(0,1fr)_1.4fr] sm:gap-6">
+                  <dt className="text-sm font-medium text-chrome">{fieldName}</dt>
+                  <dd className="text-sm leading-relaxed text-label">{why}</dd>
                 </div>
               ))}
             </dl>
@@ -73,12 +73,12 @@ export default function PrivacyPage() {
         ))}
       </div>
 
-      <section className="panel mt-14 p-7">
+      <section className="border border-hairline mt-14 p-7">
         <h2 className="text-lg font-semibold tracking-tight">Never collected</h2>
         <ul className="mt-5 grid gap-2.5 sm:grid-cols-2">
           {NEVER.map((item) => (
-            <li key={item} className="flex items-start gap-2.5 text-sm text-chalk-dim">
-              <span className="mt-0.5 text-mint" aria-hidden="true">
+            <li key={item} className="flex items-start gap-2.5 text-sm text-body">
+              <span className="mt-0.5 text-sealed" aria-hidden="true">
                 ✓
               </span>
               {item}
@@ -89,7 +89,7 @@ export default function PrivacyPage() {
 
       <section className="mt-14">
         <h2 className="text-lg font-semibold tracking-tight">Rate limiting, without logs</h2>
-        <p className="mt-3 text-pretty leading-relaxed text-chalk-dim">
+        <p className="mt-3 leading-relaxed text-body">
           Spam control still needs to tell callers apart. We keep counters in memory, keyed by an
           HMAC of the caller&apos;s IP under a secret that is regenerated every hour and never
           written to disk. Nothing persists, the key cannot be reversed to an address, and after
@@ -99,7 +99,7 @@ export default function PrivacyPage() {
 
       <section className="mt-14">
         <h2 className="text-lg font-semibold tracking-tight">If someone asks us for data</h2>
-        <p className="mt-3 text-pretty leading-relaxed text-chalk-dim">
+        <p className="mt-3 leading-relaxed text-body">
           For a private drop or an inbox message we can hand over ciphertext, and that is the whole
           extent of it - we hold no key and there is no key to compel. For the Wall we can hand over
           what is already public, which is the text itself. There is no account behind it to

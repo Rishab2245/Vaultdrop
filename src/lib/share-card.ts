@@ -3,26 +3,31 @@
 import { PALETTES } from './constants';
 
 /**
- * Render a secret as an image.
+ * Render a record as an image.
  *
  * This is the growth engine, not a nicety. Whisper grew on text-over-image
- * cards and NGL grew on a link people pasted into an Instagram Story; both
- * spread because the artifact left the app. A confession that can only be read
- * on our domain reaches the people already here, which is nobody at the start.
+ * cards and NGL grew on a link people pasted into a story; both spread because
+ * the artifact left the app. A confession that can only be read on our domain
+ * reaches the people already here, which at the start is nobody.
  *
- * Drawn on a canvas rather than screenshotted so the output is always the same
- * size and always legible, whatever device it came from.
+ * The card is the record, printed: system chrome in mono around a serif body,
+ * with a redaction bar under the signature line. Drawn on a canvas rather than
+ * screenshotted so the output is the same size and legible from any device.
  */
 
 const WIDTH = 1080;
 const HEIGHT = 1350;
-const MARGIN = 96;
+const MARGIN = 88;
 
-function wrapText(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  maxWidth: number
-): string[] {
+const VOID = '#0A0E1A';
+const HAIRLINE = '#2A3050';
+const CHROME = '#E8ECF4';
+const LABEL = '#5E6680';
+
+const MONO = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
+const SERIF = 'Newsreader, Georgia, "Times New Roman", serif';
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const lines: string[] = [];
 
   for (const paragraph of text.split('\n')) {
@@ -46,23 +51,29 @@ function wrapText(
   return lines;
 }
 
-/** Largest font size at which the body still fits the card. */
-function fitFontSize(ctx: CanvasRenderingContext2D, body: string, maxWidth: number, maxHeight: number) {
-  for (let size = 68; size >= 30; size -= 2) {
-    ctx.font = `600 ${size}px ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+/** Largest serif size at which the body still fits the record area. */
+function fitBody(ctx: CanvasRenderingContext2D, body: string, maxWidth: number, maxHeight: number) {
+  for (let size = 62; size >= 28; size -= 2) {
+    ctx.font = `400 ${size}px ${SERIF}`;
     const lines = wrapText(ctx, body, maxWidth);
-    const lineHeight = size * 1.34;
+    const lineHeight = size * 1.42;
     if (lines.length * lineHeight <= maxHeight) return { size, lines, lineHeight };
   }
 
-  ctx.font = `600 30px ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
-  const lines = wrapText(ctx, body, maxWidth).slice(0, 18);
-  return { size: 30, lines, lineHeight: 30 * 1.34 };
+  ctx.font = `400 28px ${SERIF}`;
+  return { size: 28, lines: wrapText(ctx, body, maxWidth).slice(0, 22), lineHeight: 28 * 1.42 };
+}
+
+function hairline(ctx: CanvasRenderingContext2D, y: number, from: number, to: number): void {
+  ctx.fillStyle = HAIRLINE;
+  ctx.fillRect(from, y, to - from, 1);
 }
 
 export async function renderShareCard(opts: {
   body: string;
   mood: string;
+  code: string;
+  ref: string;
   palette: number;
 }): Promise<Blob> {
   const canvas = document.createElement('canvas');
@@ -72,65 +83,66 @@ export async function renderShareCard(opts: {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Could not get a drawing context.');
 
-  const palette = PALETTES[opts.palette] ?? PALETTES[0];
+  const channel = PALETTES[opts.palette] ?? PALETTES[0];
 
-  const bg = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
-  bg.addColorStop(0, palette.from);
-  bg.addColorStop(1, palette.to);
-  ctx.fillStyle = bg;
+  ctx.fillStyle = VOID;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-  // A dark scrim keeps white text readable over the lighter palettes.
-  const scrim = ctx.createLinearGradient(0, 0, 0, HEIGHT);
-  scrim.addColorStop(0, 'rgba(7,6,11,0.34)');
-  scrim.addColorStop(0.55, 'rgba(7,6,11,0.52)');
-  scrim.addColorStop(1, 'rgba(7,6,11,0.72)');
-  ctx.fillStyle = scrim;
-  ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
   ctx.textBaseline = 'top';
 
-  ctx.font = '600 26px ui-sans-serif, system-ui, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.72)';
-  ctx.letterSpacing = '4px';
-  ctx.fillText(opts.mood.toUpperCase(), MARGIN, MARGIN);
+  const right = WIDTH - MARGIN;
+
+  // --- header: the system identifies the record -------------------------
+  ctx.font = `500 24px ${MONO}`;
+  ctx.letterSpacing = '3px';
+
+  ctx.fillStyle = channel.hex;
+  ctx.fillText(`REC ${opts.ref}`, MARGIN, MARGIN);
+
+  ctx.fillStyle = LABEL;
+  const codeWidth = ctx.measureText(opts.code).width;
+  ctx.fillText(opts.code, right - codeWidth, MARGIN);
+
+  hairline(ctx, MARGIN + 46, MARGIN, right);
+
+  // --- body: the only thing a person wrote ------------------------------
+  const maxWidth = right - MARGIN;
+  const bodyTop = MARGIN + 92;
+  const bodyMaxHeight = HEIGHT - bodyTop - 300;
+
   ctx.letterSpacing = '0px';
+  const { lines, lineHeight } = fitBody(ctx, opts.body, maxWidth, bodyMaxHeight);
 
-  const maxWidth = WIDTH - MARGIN * 2;
-  const maxHeight = HEIGHT - MARGIN * 2 - 300;
-  const { lines, lineHeight } = fitFontSize(ctx, opts.body, maxWidth, maxHeight);
-
-  const blockHeight = lines.length * lineHeight;
-  let y = Math.max(MARGIN + 160, (HEIGHT - blockHeight) / 2 - 40);
-
-  ctx.fillStyle = '#FFFFFF';
-  ctx.shadowColor = 'rgba(0,0,0,0.35)';
-  ctx.shadowBlur = 24;
-  ctx.shadowOffsetY = 4;
-
+  let y = bodyTop;
+  ctx.fillStyle = CHROME;
   for (const line of lines) {
     ctx.fillText(line, MARGIN, y);
     y += lineHeight;
   }
 
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetY = 0;
+  // --- signature: redacted, because there is no author to print ---------
+  const footTop = HEIGHT - MARGIN - 130;
+  hairline(ctx, footTop, MARGIN, right);
 
-  // Footer mark. Small, so the secret stays the subject.
-  const footerY = HEIGHT - MARGIN - 44;
+  ctx.font = `500 22px ${MONO}`;
+  ctx.letterSpacing = '3px';
+  ctx.fillStyle = LABEL;
+  ctx.fillText('SIGNED', MARGIN, footTop + 30);
 
-  ctx.fillStyle = 'rgba(255,255,255,0.14)';
-  roundRect(ctx, MARGIN, footerY - 4, 52, 52, 16);
-  ctx.fill();
+  // The bar is the point: this field exists and cannot be read.
+  const signedWidth = ctx.measureText('SIGNED').width;
+  ctx.fillStyle = CHROME;
+  ctx.fillRect(MARGIN + signedWidth + 22, footTop + 26, 232, 30);
 
-  ctx.fillStyle = 'rgba(255,255,255,0.92)';
-  ctx.font = '700 30px ui-sans-serif, system-ui, sans-serif';
-  ctx.fillText('VaultDrop', MARGIN + 70, footerY + 4);
+  // --- footer mark ------------------------------------------------------
+  ctx.font = `700 26px ${MONO}`;
+  ctx.fillStyle = CHROME;
+  ctx.fillText('VAULTDROP', MARGIN, HEIGHT - MARGIN - 52);
 
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.font = '400 24px ui-sans-serif, system-ui, sans-serif';
-  ctx.fillText('say it without saying who', MARGIN + 70, footerY + 40);
+  ctx.font = `400 20px ${MONO}`;
+  ctx.fillStyle = LABEL;
+  ctx.fillText('SAY IT WITHOUT SAYING WHO', MARGIN, HEIGHT - MARGIN - 18);
+
+  ctx.letterSpacing = '0px';
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
@@ -140,29 +152,16 @@ export async function renderShareCard(opts: {
   });
 }
 
-function roundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number
-): void {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
 /**
  * Hand the card to the OS share sheet where that exists, and fall back to a
  * download. The share sheet is the point on mobile - it is one tap from here to
- * an Instagram Story, which is the entire distribution loop.
+ * a story, which is the entire distribution loop.
  */
-export async function shareCard(blob: Blob, filename: string, text: string): Promise<'shared' | 'downloaded'> {
+export async function shareCard(
+  blob: Blob,
+  filename: string,
+  text: string
+): Promise<'shared' | 'downloaded'> {
   const file = new File([blob], filename, { type: 'image/png' });
 
   if (typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] })) {

@@ -60,13 +60,13 @@ export function LocalVault() {
   return (
     <div className="space-y-10">
       {empty && (
-        <div className="panel p-12 text-center">
-          <p className="text-chalk-dim">This browser has no VaultDrop history.</p>
+        <div className="border border-hairline p-12 text-center">
+          <p className="text-body">This browser has no VaultDrop history.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Link href="/confess" className="btn-primary">
+            <Link href="/confess" className="cmd-primary">
               Confess something
             </Link>
-            <Link href="/drop" className="btn-ghost">
+            <Link href="/drop" className="cmd">
               Send a drop
             </Link>
           </div>
@@ -75,23 +75,23 @@ export function LocalVault() {
 
       {authored.length > 0 && (
         <section>
-          <h2 className="label mb-4">Posted to the Wall</h2>
+          <h2 className="field mb-4">Posted to the Wall</h2>
           <div className="space-y-3">
             {authored.map((secret) => {
               const mood = MOODS.find((m) => m.id === secret.mood) ?? MOODS[0];
               return (
-                <article key={secret.id} className="panel p-5">
-                  <p className="line-clamp-3 whitespace-pre-wrap text-sm leading-relaxed text-chalk">
+                <article key={secret.id} className="border border-hairline p-5">
+                  <p className="line-clamp-3 whitespace-pre-wrap text-sm leading-relaxed text-chrome">
                     {secret.body}
                   </p>
-                  <div className="mt-4 flex items-center justify-between text-xs text-chalk-faint">
+                  <div className="mt-4 flex items-center justify-between text-xs text-label">
                     <span>
-                      {mood.glyph} {mood.label} · {timeAgo(secret.createdAt)}
+                      {mood.code} · {mood.label} · {timeAgo(secret.createdAt)}
                     </span>
                     <button
                       type="button"
                       onClick={() => void deleteSecret(secret)}
-                      className="btn-quiet text-ember"
+                      className="cmd-bare text-alert"
                     >
                       Delete from the Wall
                     </button>
@@ -105,13 +105,13 @@ export function LocalVault() {
 
       {drops.length > 0 && (
         <section>
-          <h2 className="label mb-4">Private drops you sent</h2>
+          <h2 className="field mb-4">Private drops you sent</h2>
           <div className="space-y-3">
             {drops.map((drop) => (
-              <article key={drop.id} className="panel p-5">
-                <p className="truncate font-mono text-xs text-chalk-dim">{drop.note || drop.id}</p>
-                <p className="mt-2 break-all font-mono text-[11px] text-chalk-faint">{drop.url}</p>
-                <div className="mt-4 flex items-center justify-between text-xs text-chalk-faint">
+              <article key={drop.id} className="border border-hairline p-5">
+                <p className="truncate font-mono text-xs text-body">{drop.note || drop.id}</p>
+                <p className="mt-2 break-all font-mono text-[11px] text-label">{drop.url}</p>
+                <div className="mt-4 flex items-center justify-between text-xs text-label">
                   <span>
                     {drop.burnAfterRead ? 'One-time · ' : ''}
                     Expires in {timeUntil(drop.expiresAt)}
@@ -119,7 +119,7 @@ export function LocalVault() {
                   <button
                     type="button"
                     onClick={() => removeDrop(drop.id)}
-                    className="btn-quiet"
+                    className="cmd-bare"
                   >
                     Forget
                   </button>
@@ -127,25 +127,25 @@ export function LocalVault() {
               </article>
             ))}
           </div>
-          <p className="mt-3 text-xs text-chalk-faint">
+          <p className="mt-3 text-xs text-label">
             Forgetting a drop only clears it from this list. It still expires on its own schedule.
           </p>
         </section>
       )}
 
       {!empty && (
-        <section className="panel p-5">
-          <h2 className="text-sm font-medium text-chalk">Erase everything</h2>
-          <p className="mt-1.5 text-sm leading-relaxed text-chalk-faint">
+        <section className="border border-hairline p-5">
+          <h2 className="text-sm font-medium text-chrome">Erase everything</h2>
+          <p className="mt-1.5 text-sm leading-relaxed text-label">
             Clears this browser&apos;s history, reaction memory, drop links, and inbox keys. Wall
             posts stay up - deleting them individually is the only way, and only from here.
           </p>
           {confirmWipe ? (
             <div className="mt-4 flex gap-2">
-              <button type="button" onClick={wipe} className="btn-primary bg-ember text-xs hover:bg-ember/80">
+              <button type="button" onClick={wipe} className="cmd-primary bg-alert text-xs hover:bg-alert/80">
                 Yes, erase it all
               </button>
-              <button type="button" onClick={() => setConfirmWipe(false)} className="btn-ghost text-xs">
+              <button type="button" onClick={() => setConfirmWipe(false)} className="cmd text-xs">
                 Cancel
               </button>
             </div>
@@ -153,7 +153,7 @@ export function LocalVault() {
             <button
               type="button"
               onClick={() => setConfirmWipe(true)}
-              className="btn-ghost mt-4 text-xs text-ember"
+              className="cmd mt-4 text-xs text-alert"
             >
               Erase this browser
             </button>

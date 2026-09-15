@@ -54,17 +54,17 @@ export default async function WallPage() {
   const { items, hasMore } = await getInitialFeed();
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
-      <header className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">The Wall</h1>
-        <p className="mt-2 max-w-lg text-pretty leading-relaxed text-chalk-dim">
-          Things people could not say anywhere else. Nobody here has a name, including you.
+    <div className="mx-auto max-w-4xl px-4 py-10">
+      <header className="mb-6">
+        <h1 className="font-serif text-[2rem] leading-tight text-chrome">The Wall</h1>
+        <p className="mt-2 max-w-lg text-base leading-relaxed text-body">
+          Records people could not file anywhere else. Nobody here has a name, including you.
         </p>
-        <div className="mt-5 flex flex-wrap gap-3">
-          <Link href="/confess" className="btn-primary">
-            Add yours
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link href="/confess" className="cmd-primary no-underline">
+            File a record
           </Link>
-          <Link href="/drop" className="btn-ghost">
+          <Link href="/drop" className="cmd no-underline">
             Send it privately instead
           </Link>
         </div>

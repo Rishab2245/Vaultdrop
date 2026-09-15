@@ -51,18 +51,18 @@ export function DropReader({ id }: { id: string }) {
   }, [id]);
 
   const decrypt = useCallback(
-    async (sealed: SealedPayload, phrase?: string) => {
+    async (stamp: SealedPayload, phrase?: string) => {
       if (!linkKey) {
         setError('This link is missing its key. It was probably truncated when it was shared.');
         setStage('error');
         return;
       }
       try {
-        setPlaintext(await openLinkDrop(sealed, linkKey, phrase));
+        setPlaintext(await openLinkDrop(stamp, linkKey, phrase));
         setStage('revealed');
         setError(null);
       } catch {
-        if (sealed.passwordSalt) {
+        if (stamp.passwordSalt) {
           setError(phrase ? 'That passphrase did not work.' : null);
           setStage('passphrase');
         } else {
@@ -84,7 +84,7 @@ export function DropReader({ id }: { id: string }) {
         return;
       }
       const data = await response.json();
-      const sealed: SealedPayload = {
+      const stamp: SealedPayload = {
         ciphertext: data.ciphertext,
         iv: data.iv,
         ...(data.passwordSalt ? { passwordSalt: data.passwordSalt } : {}),
@@ -92,9 +92,9 @@ export function DropReader({ id }: { id: string }) {
 
       // Held in memory so a wrong passphrase can be retried without another
       // request - which matters, because a burn drop no longer exists server-side.
-      setPayload(sealed);
+      setPayload(stamp);
       setBurned(Boolean(data.burned));
-      await decrypt(sealed, undefined);
+      await decrypt(stamp, undefined);
     } catch {
       setStage('error');
       setError('Could not reach the server.');
@@ -107,14 +107,14 @@ export function DropReader({ id }: { id: string }) {
 
   if (stage === 'gone') {
     return (
-      <div className="panel p-10 text-center">
+      <div className="border border-hairline p-10 text-center">
         <p className="text-2xl">🕳</p>
         <h1 className="mt-4 text-xl font-semibold">This drop is gone</h1>
-        <p className="mx-auto mt-2 max-w-sm text-pretty text-sm leading-relaxed text-chalk-dim">
+        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-body">
           It was opened already, or it expired. One-time drops really are one time - there is no
           copy anywhere, including ours.
         </p>
-        <Link href="/drop" className="btn-primary mt-6">
+        <Link href="/drop" className="cmd-primary mt-6">
           Send one of your own
         </Link>
       </div>
@@ -124,23 +124,23 @@ export function DropReader({ id }: { id: string }) {
   if (stage === 'revealed') {
     return (
       <div className="space-y-5">
-        <div className="panel overflow-hidden">
-          <div className="flex items-center justify-between gap-3 border-b border-ink-700/70 px-5 py-3">
-            <div className="sealed">Decrypted on your device</div>
-            {burned && <span className="text-xs text-ember">Destroyed - this was the only read</span>}
+        <div className="border border-hairline overflow-hidden">
+          <div className="flex items-center justify-between gap-3 border-b border-hairline/70 px-5 py-3">
+            <div className="stamp">Decrypted on your device</div>
+            {burned && <span className="text-xs text-alert">Destroyed - this was the only read</span>}
           </div>
-          <pre className="whitespace-pre-wrap break-words p-5 font-mono text-sm leading-relaxed text-chalk">
+          <pre className="whitespace-pre-wrap break-words p-5 font-mono text-sm leading-relaxed text-chrome">
             {plaintext}
           </pre>
         </div>
 
-        <p className="text-sm text-chalk-faint">
+        <p className="text-sm text-label">
           {burned
             ? 'Copy anything you need now. Refreshing this page will not bring it back.'
             : 'This drop can still be opened until it expires.'}
         </p>
 
-        <Link href="/drop" className="btn-ghost">
+        <Link href="/drop" className="cmd">
           Send one back
         </Link>
       </div>
@@ -149,10 +149,10 @@ export function DropReader({ id }: { id: string }) {
 
   if (stage === 'passphrase') {
     return (
-      <div className="panel p-6">
-        <div className="sealed mb-4">Passphrase required</div>
+      <div className="border border-hairline p-6">
+        <div className="stamp mb-4">Passphrase required</div>
         <h1 className="text-xl font-semibold">One more thing</h1>
-        <p className="mt-1.5 text-sm leading-relaxed text-chalk-dim">
+        <p className="mt-1.5 text-sm leading-relaxed text-body">
           The sender added a passphrase. They will have shared it separately - we never had it.
         </p>
 
@@ -170,16 +170,16 @@ export function DropReader({ id }: { id: string }) {
             placeholder="Passphrase"
             autoComplete="off"
             autoFocus
-            className="field flex-1"
+            className="input flex-1"
             aria-label="Passphrase"
           />
-          <button type="submit" disabled={passphrase.length === 0} className="btn-primary shrink-0">
+          <button type="submit" disabled={passphrase.length === 0} className="cmd-primary shrink-0">
             Unlock
           </button>
         </form>
 
         {error && (
-          <p role="alert" className="mt-3 text-sm text-ember">
+          <p role="alert" className="mt-3 text-sm text-alert">
             {error}
           </p>
         )}
@@ -189,9 +189,9 @@ export function DropReader({ id }: { id: string }) {
 
   if (stage === 'error') {
     return (
-      <div className="panel p-10 text-center">
+      <div className="border border-hairline p-10 text-center">
         <h1 className="text-xl font-semibold">Something is wrong with this link</h1>
-        <p className="mx-auto mt-2 max-w-sm text-pretty text-sm leading-relaxed text-chalk-dim">
+        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-body">
           {error ?? 'We could not open this drop.'}
         </p>
       </div>
@@ -199,11 +199,11 @@ export function DropReader({ id }: { id: string }) {
   }
 
   return (
-    <div className="panel p-8 text-center">
-      <div className="sealed mx-auto">End-to-end encrypted</div>
+    <div className="border border-hairline p-8 text-center">
+      <div className="stamp mx-auto">End-to-end encrypted</div>
 
       <h1 className="mt-5 text-2xl font-semibold tracking-tight">Someone sent you a drop</h1>
-      <p className="mx-auto mt-2 max-w-md text-pretty text-sm leading-relaxed text-chalk-dim">
+      <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-body">
         {meta?.burnAfterRead
           ? 'This one is destroyed the moment you open it. Make sure you have a minute.'
           : 'It stays readable until it expires.'}
@@ -211,7 +211,7 @@ export function DropReader({ id }: { id: string }) {
       </p>
 
       {!linkKey && (
-        <p className="mx-auto mt-5 max-w-md rounded-2xl border border-ember/40 bg-ember/10 p-3 text-sm text-ember">
+        <p className="mx-auto mt-5 max-w-md border border-alert/50 p-3 text-sm text-alert">
           This link is missing the part after the <code>#</code>, which is the key. Ask the sender
           to resend it - some apps cut links short.
         </p>
@@ -221,7 +221,7 @@ export function DropReader({ id }: { id: string }) {
         type="button"
         onClick={open}
         disabled={stage === 'opening' || !linkKey}
-        className="btn-primary mt-6"
+        className="cmd-primary mt-6"
       >
         {stage === 'opening' ? 'Decrypting…' : meta?.burnAfterRead ? 'Open once' : 'Open'}
       </button>

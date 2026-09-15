@@ -9,14 +9,16 @@ export const metadata: Metadata = {
 
 export default function DropPage() {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
-      <header className="mb-8">
-        <div className="sealed mb-4">Encrypted in your browser</div>
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Send a private drop</h1>
-        <p className="mt-2 text-pretty leading-relaxed text-chalk-dim">
-          For one person, not the Wall. This is encrypted here, on your device, and the key lives in
-          the link you share - after the <code className="text-chalk">#</code>, which browsers never
-          send to a server. We store bytes we cannot read.
+    <div className="mx-auto max-w-3xl px-4 py-10">
+      <header className="mb-6">
+        <span className="stamp">Encrypted on this device</span>
+        <h1 className="mt-4 font-serif text-[2rem] leading-tight text-chrome">
+          Send a private drop
+        </h1>
+        <p className="mt-2 max-w-xl text-base leading-relaxed text-body">
+          For one person, not the Wall. Encrypted here, on your device, with the key living in the
+          link you share — after the <span className="text-amber">#</span>, which browsers never
+          transmit. This system stores bytes it cannot read.
         </p>
       </header>
 
