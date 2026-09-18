@@ -4,16 +4,20 @@
 // nothing that identifies a person. There are no user accounts, no sessions,
 // no IP addresses, and no email addresses anywhere in this schema.
 //
-// SQLite by default so the app runs with zero setup. Swap `provider` to
-// "postgresql" for production; no other change is required (enums are modelled
-// as validated strings precisely so both engines work).
+// MongoDB. Every id is mapped to Mongo's `_id`, and enums stay modelled as
+// validated strings - Mongo has no enum type, and keeping them as strings is
+// what lets the same models run on a relational engine too if this ever moves.
+//
+// Atlas is a replica set, which matters: the escrow in the Exchange moves Keys
+// between two ghosts inside `prisma.$transaction`, and Mongo only supports
+// transactions on a replica set.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
@@ -22,7 +26,7 @@ datasource db {
 /// security theatre. Authorship is proved by a token the client keeps; we store
 /// only its hash, so we can honour "delete mine" without knowing who "mine" is.
 model WallSecret {
-  id   String @id @default(cuid())
+  id   String @id @default(cuid()) @map("_id")
   body String
 
   /// One of the MOODS list in src/lib/constants.ts
@@ -81,7 +85,7 @@ model WallSecret {
 /// decryption key lives in the URL fragment (never transmitted) or is derived
 /// via ECDH against a public key whose private half never leaves the browser.
 model EncryptedDrop {
-  id String @id @default(cuid())
+  id String @id @default(cuid()) @map("_id")
 
   /// base64. AES-256-GCM ciphertext.
   ciphertext String
@@ -110,7 +114,7 @@ model EncryptedDrop {
 /// A named anonymous inbox. Holds a public key only; the matching private key
 /// is generated in the owner's browser and never sent anywhere.
 model Inbox {
-  id     String @id @default(cuid())
+  id     String @id @default(cuid()) @map("_id")
   handle String @unique
 
   /// base64 SPKI, ECDH P-256.
@@ -127,7 +131,7 @@ model Inbox {
 /// Abuse report against a Wall secret. Carries no reporter identity - the point
 /// is the content, not who flagged it.
 model Report {
-  id           String     @id @default(cuid())
+  id           String     @id @default(cuid()) @map("_id")
   wallSecretId String
   wallSecret   WallSecret @relation(fields: [wallSecretId], references: [id], onDelete: Cascade)
 
@@ -154,7 +158,7 @@ model Report {
 /// used to signal anything about the person behind it.
 model Ghost {
   /// sha256 of the ghost's local secret, base64url. The secret never persists here.
-  id       String @id
+  id       String @id @map("_id")
   codename String @unique
 
   /// base64 SPKI, ECDH P-256. Lets other ghosts encrypt a thread message to
@@ -190,7 +194,7 @@ model Ghost {
 /// when someone says their Keys vanished - and because the escrow needs a
 /// record of what is owed to whom.
 model LedgerEntry {
-  id      String @id @default(cuid())
+  id      String @id @default(cuid()) @map("_id")
   ghostId String
   ghost   Ghost  @relation(fields: [ghostId], references: [id], onDelete: Cascade)
 
@@ -216,7 +220,7 @@ model LedgerEntry {
 /// closes. Paying on open would reward a good teaser; the teaser is the one
 /// part of a locked record nobody can verify before paying for it.
 model Open {
-  id       String     @id @default(cuid())
+  id       String     @id @default(cuid()) @map("_id")
   secretId String
   secret   WallSecret @relation(fields: [secretId], references: [id], onDelete: Cascade)
   ghostId  String
@@ -243,7 +247,7 @@ model Open {
 /// one. Messages are encrypted to each party's ECDH key, so the server routes
 /// them without being able to read them.
 model Thread {
-  id       String     @id @default(cuid())
+  id       String     @id @default(cuid()) @map("_id")
   secretId String
   secret   WallSecret @relation(fields: [secretId], references: [id], onDelete: Cascade)
 
@@ -266,7 +270,7 @@ model Thread {
 
 /// One encrypted message in a thread. Ciphertext only; see EncryptedDrop.
 model ThreadMessage {
-  id       String @id @default(cuid())
+  id       String @id @default(cuid()) @map("_id")
   threadId String
   thread   Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
 

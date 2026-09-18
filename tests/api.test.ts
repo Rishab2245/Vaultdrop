@@ -252,6 +252,23 @@ describe('encrypted drops', () => {
     expect(await prisma.encryptedDrop.count()).toBe(1);
   });
 
+  it('stores readAt as an explicit null so the burn claim can match it', async () => {
+    // MongoDB regression guard. An optional field that is never written is
+    // ABSENT from the document, not null, and a `readAt: null` filter does not
+    // match a missing field - so the conditional claim in drops/[id]/open
+    // matched nothing and every first read 404'd. The fix is to write the null;
+    // this test fails if anyone tidies that away.
+    const created = await (
+      await dropsPost(post('http://t/api/drops', { ...payload, burnAfterRead: true }))
+    ).json();
+
+    const claimed = await prisma.encryptedDrop.updateMany({
+      where: { id: created.id, readAt: null },
+      data: { readAt: new Date() },
+    });
+    expect(claimed.count).toBe(1);
+  });
+
   it('burns exactly once', async () => {
     const created = await (
       await dropsPost(post('http://t/api/drops', { ...payload, burnAfterRead: true }))

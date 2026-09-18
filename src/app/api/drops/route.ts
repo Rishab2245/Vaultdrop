@@ -40,6 +40,12 @@ export async function POST(request: Request) {
       passwordSalt,
       burnAfterRead: body.burnAfterRead === true,
       expiresAt: new Date(Date.now() + expiryMs),
+      // Written explicitly so the field EXISTS as null rather than being
+      // absent. On MongoDB an optional field that was never set is missing
+      // from the document, and a `readAt: null` filter does not match a
+      // missing field - which would make the burn-after-read claim in
+      // drops/[id]/open silently match nothing and 404 every first read.
+      readAt: null,
     },
   });
 
