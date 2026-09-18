@@ -26,9 +26,9 @@ model WallSecret {
   body String
 
   /// One of the MOODS list in src/lib/constants.ts
-  mood String
+  mood    String
   /// Index into the PALETTES gradient list, used for share cards.
-  palette Int @default(0)
+  palette Int    @default(0)
 
   /// sha256 of the author's local delete-token. Irreversible, unlinkable.
   authorTokenHash String
@@ -46,10 +46,34 @@ model WallSecret {
   heat      Float    @default(0)
   createdAt DateTime @default(now())
 
+  /// The author's ghost. Nullable because the Wall still accepts records from
+  /// someone who has never claimed an identity - anonymity must not require
+  /// registering first.
+  ghostId String?
+  ghost   Ghost?  @relation(fields: [ghostId], references: [id])
+
+  /// A locked record shows `teaser` to everyone and `body` only to ghosts who
+  /// have spent Keys opening it.
+  isLocked  Boolean @default(false)
+  teaser    String?
+  priceKeys Int     @default(0)
+
+  opensCount    Int @default(0)
+  worthItCount  Int @default(0)
+  notWorthCount Int @default(0)
+
+  /// 64-bit SimHash of the normalised body, stored as a hex string. Used to
+  /// catch someone reposting an existing secret to farm Keys.
+  simhash String?
+
   reports Report[]
+  opens   Open[]
+  threads Thread[]
 
   @@index([hidden, heat])
   @@index([hidden, createdAt])
+  @@index([ghostId, createdAt])
+  @@index([simhash])
 }
 
 /// A zero-knowledge payload: either a one-off private link drop or a message
@@ -62,7 +86,7 @@ model EncryptedDrop {
   /// base64. AES-256-GCM ciphertext.
   ciphertext String
   /// base64. 12-byte AES-GCM nonce.
-  iv String
+  iv         String
 
   /// base64 SPKI of the sender's ephemeral ECDH public key. Inbox messages only.
   senderPubKey String?
@@ -112,4 +136,149 @@ model Report {
   createdAt DateTime @default(now())
 
   @@index([wallSecretId])
+}
+
+/// ---------------------------------------------------------------------------
+/// The Exchange
+/// ---------------------------------------------------------------------------
+
+/// A persistent pseudonymous identity.
+///
+/// This is the one place the product holds something that survives a page
+/// reload, and it exists because reputation and a Key balance cannot work
+/// without continuity. It is still not an account: there is no email, no
+/// password, no phone number, and no recovery path that runs through us. The
+/// secret half lives in the owner's browser; we hold only its hash.
+///
+/// The codename is derived from the id, so it cannot be chosen, squatted, or
+/// used to signal anything about the person behind it.
+model Ghost {
+  /// sha256 of the ghost's local secret, base64url. The secret never persists here.
+  id       String @id
+  codename String @unique
+
+  /// base64 SPKI, ECDH P-256. Lets other ghosts encrypt a thread message to
+  /// this one. The private half never leaves the owner's device.
+  publicKey String
+
+  /// Spendable balance. Keys are not money and are deliberately not cashable.
+  keys Int @default(0)
+
+  /// Reputation, earned only from opens that were confirmed worthwhile.
+  opensReceived Int @default(0)
+  worthItCount  Int @default(0)
+  notWorthCount Int @default(0)
+
+  createdAt   DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+  /// UTC day of the last daily grant, so the grant cannot be farmed by reloading.
+  lastGrantOn String?
+
+  records  WallSecret[]
+  ledger   LedgerEntry[]
+  opens    Open[]
+  authored Thread[]        @relation("ThreadAuthor")
+  started  Thread[]        @relation("ThreadStarter")
+  messages ThreadMessage[]
+
+  @@index([keys])
+}
+
+/// Append-only history of every Key movement.
+///
+/// Append-only because a balance with no audit trail is impossible to defend
+/// when someone says their Keys vanished - and because the escrow needs a
+/// record of what is owed to whom.
+model LedgerEntry {
+  id      String @id @default(cuid())
+  ghostId String
+  ghost   Ghost  @relation(fields: [ghostId], references: [id], onDelete: Cascade)
+
+  /// Signed. Negative is a spend.
+  delta   Int
+  /// Running balance after this entry, so history is reconstructable.
+  balance Int
+
+  /// One of LEDGER_REASONS in src/lib/economy.ts
+  reason String
+  /// The record or open this entry relates to, where there is one.
+  refId  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([ghostId, createdAt])
+}
+
+/// One ghost opening one locked record.
+///
+/// The Keys are taken immediately but held, not paid. They move to the author
+/// only once the opener says the secret was worth it, or once the rating window
+/// closes. Paying on open would reward a good teaser; the teaser is the one
+/// part of a locked record nobody can verify before paying for it.
+model Open {
+  id       String     @id @default(cuid())
+  secretId String
+  secret   WallSecret @relation(fields: [secretId], references: [id], onDelete: Cascade)
+  ghostId  String
+  ghost    Ghost      @relation(fields: [ghostId], references: [id], onDelete: Cascade)
+
+  priceKeys Int
+
+  /// 'escrow' | 'released' | 'refunded'
+  status  String  @default("escrow")
+  /// 'worth' | 'not_worth' | null while unrated
+  verdict String?
+
+  createdAt DateTime  @default(now())
+  settledAt DateTime?
+
+  @@unique([secretId, ghostId])
+  @@index([status, createdAt])
+  @@index([ghostId, createdAt])
+}
+
+/// A private thread opened by someone who marked "same" on a record.
+///
+/// The payoff for confessing something is discovering you are not the only
+/// one. Messages are encrypted to each party's ECDH key, so the server routes
+/// them without being able to read them.
+model Thread {
+  id       String     @id @default(cuid())
+  secretId String
+  secret   WallSecret @relation(fields: [secretId], references: [id], onDelete: Cascade)
+
+  authorGhostId  String
+  author         Ghost  @relation("ThreadAuthor", fields: [authorGhostId], references: [id], onDelete: Cascade)
+  starterGhostId String
+  starter        Ghost  @relation("ThreadStarter", fields: [starterGhostId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  lastMessageAt DateTime @default(now())
+  /// Either side can close a thread and stop further messages.
+  closed        Boolean  @default(false)
+
+  messages ThreadMessage[]
+
+  @@unique([secretId, starterGhostId])
+  @@index([authorGhostId, lastMessageAt])
+  @@index([starterGhostId, lastMessageAt])
+}
+
+/// One encrypted message in a thread. Ciphertext only; see EncryptedDrop.
+model ThreadMessage {
+  id       String @id @default(cuid())
+  threadId String
+  thread   Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  senderGhostId String
+  sender        Ghost  @relation(fields: [senderGhostId], references: [id], onDelete: Cascade)
+
+  ciphertext   String
+  iv           String
+  /// Ephemeral ECDH public key of the sender for this message.
+  senderPubKey String
+
+  createdAt DateTime @default(now())
+
+  @@index([threadId, createdAt])
 }

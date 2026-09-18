@@ -1,4 +1,6 @@
 import { prisma } from './db';
+import { ECONOMY, payoutForOpen } from './economy';
+import { moveKeys } from './ghost-server';
 
 /**
  * Delete everything past its expiry.
@@ -18,6 +20,67 @@ export async function sweepExpired(): Promise<number> {
   return result.count;
 }
 
+/**
+ * Release escrow that nobody rated in time.
+ *
+ * Most opens are never rated - people read the thing and move on. Without this,
+ * the majority of an author's earnings would sit frozen forever and locking a
+ * record would stop being worth doing, which collapses the supply side of the
+ * whole Exchange.
+ *
+ * Silence resolves in the author's favour deliberately. The opener had three
+ * days and one tap to object.
+ */
+export async function settleStaleEscrow(): Promise<number> {
+  const cutoff = new Date(Date.now() - ECONOMY.verdictWindowHours * 3_600_000);
+
+  const stale = await prisma.open.findMany({
+    where: { status: 'escrow', createdAt: { lte: cutoff } },
+    include: { secret: { select: { id: true, ghostId: true } } },
+    take: 200,
+  });
+
+  let settled = 0;
+
+  for (const open of stale) {
+    const authorId = open.secret.ghostId;
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        if (authorId) {
+          const priorPaid = await tx.open.count({
+            where: {
+              ghostId: open.ghostId,
+              status: 'released',
+              secret: { ghostId: authorId },
+            },
+          });
+
+          const payout = payoutForOpen(open.priceKeys, priorPaid);
+          if (payout > 0) await moveKeys(tx, authorId, payout, 'release', open.id);
+
+          // An unrated open counts toward volume but not toward reputation -
+          // silence is not an endorsement.
+          await tx.ghost.update({
+            where: { id: authorId },
+            data: { opensReceived: { increment: 1 } },
+          });
+        }
+
+        await tx.open.update({
+          where: { id: open.id },
+          data: { status: 'released', settledAt: new Date() },
+        });
+      });
+      settled++;
+    } catch {
+      // One stuck row must not stop the rest of the batch.
+    }
+  }
+
+  return settled;
+}
+
 let lastSweep = 0;
 const SWEEP_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -27,7 +90,7 @@ export function sweepInBackground(): void {
   if (now - lastSweep < SWEEP_INTERVAL_MS) return;
   lastSweep = now;
 
-  sweepExpired().catch(() => {
+  Promise.all([sweepExpired(), settleStaleEscrow()]).catch(() => {
     // A failed sweep must never fail the request that triggered it; the next
     // write, or the scheduled endpoint, will pick it up.
   });

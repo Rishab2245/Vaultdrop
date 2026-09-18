@@ -5,14 +5,23 @@ import { MOODS, PALETTES, REACTIONS, REPORT_REASONS } from '@/lib/constants';
 import { compactNumber, recordRef, timeAgo } from '@/lib/format';
 import { getReactions, toggleReaction } from '@/lib/local-vault';
 import { renderShareCard, shareCard } from '@/lib/share-card';
+import { SameThread } from './SameThread';
 
 export interface WallSecret {
   id: string;
-  body: string;
+  /** Null only for a locked record, which LockedRecord renders instead. */
+  body: string | null;
+  teaser?: string | null;
+  isLocked?: boolean;
+  unlocked?: boolean;
+  priceKeys?: number;
   mood: string;
   palette: number;
   reactions: { felt: number; hug: number; whoa: number; same: number };
   views: number;
+  opens?: number;
+  worthItRate?: number | null;
+  author?: { codename: string; standing: string } | null;
   createdAt: string;
 }
 
@@ -68,13 +77,13 @@ export function SecretCard({ secret }: { secret: WallSecret; priority?: boolean 
     setSharing(true);
     try {
       const blob = await renderShareCard({
-        body: secret.body,
+        body: secret.body ?? '',
         mood: mood.label,
         code: mood.code,
         ref,
         palette: secret.palette,
       });
-      await shareCard(blob, `vaultdrop-${ref}.png`, secret.body);
+      await shareCard(blob, `vaultdrop-${ref}.png`, secret.body ?? '');
     } catch {
       // Canvas unavailable; nothing useful to say beyond letting the control reset.
     } finally {
@@ -121,7 +130,13 @@ export function SecretCard({ secret }: { secret: WallSecret; priority?: boolean 
           REC {ref}
         </span>
         <span>{mood.code}</span>
-        <span className="ml-auto">{timeAgo(secret.createdAt)}</span>
+        {secret.author && <span>{secret.author.codename}</span>}
+        {/* A relative timestamp is computed from the clock, so the server's
+            value and the browser's differ by however long the response took.
+            The difference is the correct behaviour, not a bug to reconcile. */}
+        <span className="ml-auto" suppressHydrationWarning>
+          {timeAgo(secret.createdAt)}
+        </span>
         {secret.views > 0 && <span>{compactNumber(secret.views)} READ</span>}
       </div>
 
@@ -148,6 +163,7 @@ export function SecretCard({ secret }: { secret: WallSecret; priority?: boolean 
         })}
 
         <span className="ml-auto flex items-center gap-1">
+          {secret.author && <SameThread secretId={secret.id} />}
           <button
             type="button"
             onClick={onShare}

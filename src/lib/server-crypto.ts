@@ -16,3 +16,24 @@ export function safeEqual(a: string, b: string): boolean {
 export function randomToken(bytes = 32): string {
   return randomBytes(bytes).toString('base64url');
 }
+
+/**
+ * sha256(secret) as URL-safe base64 - the server half of deriveGhostId.
+ *
+ * The client sends the raw secret in an Authorization header; we hash it and
+ * look up the ghost. Only this hash is ever stored, so a dump of the database
+ * does not let anyone act as a ghost.
+ *
+ * This is bearer-token authentication, with the honest limitation that comes
+ * with it: the secret is in the request, so an operator who logged headers
+ * could replay it. We do not log them. Signed requests would remove the need to
+ * trust that, and are the upgrade path if Keys ever carry real value.
+ */
+export function deriveGhostIdFromSecret(secret: string): string {
+  return createHash('sha256')
+    .update(secret, 'utf8')
+    .digest('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}

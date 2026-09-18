@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { computeHeat } from '@/lib/heat';
+import { standingOf, worthItRate } from '@/lib/economy';
 import { WallFeed } from '@/components/WallFeed';
 import type { WallSecret } from '@/components/SecretCard';
 
@@ -18,12 +19,21 @@ const PAGE_SIZE = 24;
  * The first page is read straight from the database rather than through our own
  * HTTP API - it is the same process, so a round trip would buy nothing and cost
  * a visible delay on the one screen that has to feel instant.
+ *
+ * This render has no ghost credential, so every locked record is sealed here
+ * regardless of who is looking. A locked body must never reach the HTML, and
+ * "the client will hide it" is exactly the mistake the previous build shipped.
+ * WallFeed re-syncs against the API once it knows whether this visitor has
+ * already paid for any of them.
  */
 async function getInitialFeed(): Promise<{ items: WallSecret[]; hasMore: boolean }> {
   const candidates = await prisma.wallSecret.findMany({
     where: { hidden: false },
     orderBy: { heat: 'desc' },
     take: 400,
+    include: {
+      ghost: { select: { codename: true, worthItCount: true, notWorthCount: true } },
+    },
   });
 
   const now = new Date();
@@ -34,7 +44,11 @@ async function getInitialFeed(): Promise<{ items: WallSecret[]; hasMore: boolean
   return {
     items: ranked.slice(0, PAGE_SIZE).map(({ secret }) => ({
       id: secret.id,
-      body: secret.body,
+      body: secret.isLocked ? null : secret.body,
+      teaser: secret.teaser,
+      isLocked: secret.isLocked,
+      unlocked: !secret.isLocked,
+      priceKeys: secret.priceKeys,
       mood: secret.mood,
       palette: secret.palette,
       reactions: {
@@ -44,6 +58,14 @@ async function getInitialFeed(): Promise<{ items: WallSecret[]; hasMore: boolean
         same: secret.reactSame,
       },
       views: secret.viewCount,
+      opens: secret.opensCount,
+      worthItRate: worthItRate(secret.worthItCount, secret.notWorthCount),
+      author: secret.ghost
+        ? {
+            codename: secret.ghost.codename,
+            standing: standingOf(secret.ghost.worthItCount, secret.ghost.notWorthCount),
+          }
+        : null,
       createdAt: secret.createdAt.toISOString(),
     })),
     hasMore: ranked.length > PAGE_SIZE,

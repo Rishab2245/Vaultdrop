@@ -1,5 +1,5 @@
 import { fail, ok } from '@/lib/api';
-import { sweepExpired } from '@/lib/sweep';
+import { settleStaleEscrow, sweepExpired } from '@/lib/sweep';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +21,6 @@ export async function POST(request: Request) {
   const provided = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
   if (provided !== secret) return fail(401, 'Unauthorised.');
 
-  const deleted = await sweepExpired();
-  return ok({ deleted });
+  const [deleted, settled] = await Promise.all([sweepExpired(), settleStaleEscrow()]);
+  return ok({ deleted, settled });
 }
