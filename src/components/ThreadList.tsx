@@ -69,7 +69,7 @@ export function ThreadList() {
                 <span>{timeAgo(thread.lastMessageAt)}</span>
               </div>
               <div className="px-3 py-2.5">
-                <p className="line-clamp-2 font-serif text-base leading-relaxed text-body">
+                <p className="clamp-2 font-serif text-base leading-relaxed text-body">
                   {thread.secret.preview}
                 </p>
               </div>

@@ -169,7 +169,7 @@ export default async function LeaderboardPage() {
                         <span className="tabular hidden sm:inline">{rate}% WORTH IT</span>
                       )}
                     </div>
-                    <p className="line-clamp-2 px-3 pb-2.5 pt-1.5 font-serif text-base leading-relaxed text-body">
+                    <p className="clamp-2 px-3 pb-2.5 pt-1.5 font-serif text-base leading-relaxed text-body">
                       {preview}
                     </p>
                   </Link>

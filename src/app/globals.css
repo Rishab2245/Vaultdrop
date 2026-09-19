@@ -240,6 +240,20 @@
   .skeleton {
     @apply border border-hairline bg-panel;
   }
+
+  /*
+    Two-line preview.
+    Tailwind's line-clamp utility was resolving to `display: flow-root` here, so
+    the clamp never engaged and a third line bled out under the fold. Declared
+    in full rather than debugging whose cascade won.
+  */
+  .clamp-2 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
 }
 
 @layer utilities {
