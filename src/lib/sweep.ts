@@ -12,6 +12,12 @@ import { moveKeys } from './ghost-server';
  *
  * Called opportunistically whenever a drop is created, and exposed as an
  * endpoint so a scheduler can guarantee it runs on a quiet site too.
+ *
+ * The scheduled run is daily rather than hourly, because Vercel's Hobby plan
+ * only permits once-a-day crons. That is enough: expired drops are also deleted
+ * lazily on read and opportunistically on write, and escrow settles on a 72h
+ * window, so a daily pass adds at most a day of latency to something already
+ * measured in days.
  */
 export async function sweepExpired(): Promise<number> {
   const result = await prisma.encryptedDrop.deleteMany({
