@@ -27,6 +27,14 @@
     min-height: 100dvh;
   }
 
+  /* Clear the fixed mobile navigation, which would otherwise sit on top of
+     the last record on every page. Includes the home-indicator inset. */
+  @media (max-width: 767px) {
+    body {
+      padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+    }
+  }
+
   ::selection {
     background: #ffa02f;
     color: #0a0e1a;

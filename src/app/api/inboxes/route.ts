@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { sha256Base64 } from '@/lib/server-crypto';
 import { asString, fail, guard, ok, readJson } from '@/lib/api';
 import { RATE_LIMITS } from '@/lib/ratelimit';
 import { validateHandle } from '@/lib/constants';
@@ -32,7 +33,11 @@ export async function POST(request: Request) {
 
   try {
     const inbox = await prisma.inbox.create({
-      data: { handle: check.handle, publicKey, ownerTokenHash },
+      // Store a hash of what the owner presents, never the credential itself.
+      // Ghosts already work this way; inboxes did not, which meant a database
+      // dump handed an attacker working owner tokens rather than useless
+      // digests. What the client holds is unchanged - only what we keep is.
+      data: { handle: check.handle, publicKey, ownerTokenHash: sha256Base64(ownerTokenHash) },
     });
     return ok({ handle: inbox.handle, createdAt: inbox.createdAt.toISOString() }, { status: 201 });
   } catch {

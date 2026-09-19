@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { prisma } from '@/lib/db';
 import { __resetRateLimits } from '@/lib/ratelimit';
+import { realPublicKey } from './helpers';
 import { deriveGhostIdFromSecret, sha256Base64 } from '@/lib/server-crypto';
 
 import { GET as ghostGet, POST as ghostPost } from '@/app/api/ghost/route';
@@ -33,7 +34,7 @@ const params = <T extends Record<string, string>>(v: T) => ({ params: Promise.re
 async function makeGhost(tag: string) {
   const secret = `c-${tag}-${Math.random().toString(36).slice(2)}`;
   const id = deriveGhostIdFromSecret(secret);
-  await ghostPost(post('http://t/api/ghost', { id, publicKey: `pk${'A'.repeat(50)}` }));
+  await ghostPost(post('http://t/api/ghost', { id, publicKey: await realPublicKey() }));
   await ghostGet(get('http://t/api/ghost', secret));
   return { secret, id };
 }

@@ -16,3 +16,4 @@ prisma/migrations/dev/
 .DS_Store
 *.log
 coverage/
+seed-ghost-keys.local.json

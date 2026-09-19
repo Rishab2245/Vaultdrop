@@ -326,3 +326,25 @@ model Comment {
   @@index([parentId])
   @@index([ghostId, createdAt])
 }
+
+/// An idea somebody had for the product.
+///
+/// Anonymous like everything else here - there is no contact field, because a
+/// suggestion box that collects an email address is a mailing list with extra
+/// steps, and this site does not collect email addresses.
+model Suggestion {
+  id   String @id @default(cuid()) @map("_id")
+  body String
+
+  /// One of SUGGESTION_KINDS in src/lib/constants.ts
+  kind String
+
+  /// Optional, and only ever a codename - never a way to reach anyone.
+  codename String?
+
+  handled   Boolean  @default(false)
+  hidden    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([handled, createdAt])
+}

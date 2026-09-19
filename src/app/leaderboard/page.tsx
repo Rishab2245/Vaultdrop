@@ -78,7 +78,7 @@ export default async function LeaderboardPage() {
       <section className="border border-hairline">
         <div className="rec-head">
           <span>GHOSTS BY STANDING</span>
-          <span className="ml-auto">MIN 3 RATINGS TO RANK</span>
+          <span className="ml-auto hidden sm:inline">MIN 3 RATINGS TO RANK</span>
         </div>
 
         {ranked.length === 0 ? (
@@ -93,13 +93,23 @@ export default async function LeaderboardPage() {
         ) : (
           <ol className="divide-y divide-hairline">
             {ranked.map((g, i) => (
-              <li key={g.codename} className="flex items-center gap-3 px-3 py-2.5">
-                <span className="tabular w-6 text-2xs text-label">
+              <li key={g.codename} className="flex items-start gap-3 px-3 py-2.5">
+                <span className="tabular w-6 shrink-0 pt-0.5 text-2xs text-label">
                   {String(i + 1).padStart(2, '0')}
                 </span>
-                <span className="text-base text-chrome">{g.codename}</span>
+
+                <div className="min-w-0 flex-1">
+                  <span className="block truncate text-base text-chrome">{g.codename}</span>
+                  {/* Metrics sit under the codename on a phone and inline on a
+                      desktop. Four fixed columns do not survive 375px. */}
+                  <span className="mt-0.5 flex flex-wrap items-baseline gap-x-3 text-2xs uppercase tracking-[0.1em] sm:hidden">
+                    <span className="tabular text-amber">{g.rate}% worth it</span>
+                    <span className="tabular text-label">{compactNumber(g.opens)} read</span>
+                  </span>
+                </div>
+
                 <span
-                  className={`ml-auto text-2xs uppercase tracking-[0.1em] ${
+                  className={`shrink-0 pt-0.5 text-2xs uppercase tracking-[0.1em] ${
                     g.standing === 'TRUSTED'
                       ? 'text-sealed'
                       : g.standing === 'POOR'
@@ -109,8 +119,10 @@ export default async function LeaderboardPage() {
                 >
                   {g.standing}
                 </span>
-                <span className="tabular w-12 text-right text-base text-amber">{g.rate}%</span>
-                <span className="tabular w-16 text-right text-2xs text-label">
+                <span className="tabular hidden w-12 shrink-0 text-right text-base text-amber sm:block">
+                  {g.rate}%
+                </span>
+                <span className="tabular hidden w-16 shrink-0 text-right text-2xs text-label sm:block">
                   {compactNumber(g.opens)} READ
                 </span>
               </li>
@@ -123,7 +135,7 @@ export default async function LeaderboardPage() {
       <section className="mt-4 border border-hairline">
         <div className="rec-head">
           <span>HALL OF FAME</span>
-          <span className="ml-auto">RECORDS PEOPLE ANSWERED</span>
+          <span className="ml-auto hidden sm:inline">RECORDS PEOPLE ANSWERED</span>
         </div>
 
         {hall.length === 0 ? (
@@ -143,20 +155,19 @@ export default async function LeaderboardPage() {
               return (
                 <li key={r.id}>
                   <Link href={`/r/${r.id}`} className="block no-underline hover:bg-panel">
-                    <div className="flex items-center gap-3 px-3 pt-2 text-2xs uppercase tracking-[0.1em] text-label">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 pt-2 text-2xs uppercase tracking-[0.1em] text-label">
                       <span className="tabular w-6">{String(i + 1).padStart(2, '0')}</span>
                       <span className="normal-case" style={{ color: channel.hex }}>
                         REC {recordRef(r.id)}
                       </span>
                       <span>{mood.code}</span>
                       {r.isLocked && <span className="text-amber">SEALED</span>}
-                      <span className="ml-auto tabular">
-                        {compactNumber(
-                          r.reactFelt + r.reactHug + r.reactWhoa + r.reactSame
-                        )}{' '}
-                        REACTED
+                      <span className="tabular ml-auto">
+                        {compactNumber(r.reactFelt + r.reactHug + r.reactWhoa + r.reactSame)} REACTED
                       </span>
-                      {rate !== null && <span className="tabular">{rate}% WORTH IT</span>}
+                      {rate !== null && (
+                        <span className="tabular hidden sm:inline">{rate}% WORTH IT</span>
+                      )}
                     </div>
                     <p className="line-clamp-2 px-3 pb-2.5 pt-1.5 font-serif text-base leading-relaxed text-body">
                       {preview}

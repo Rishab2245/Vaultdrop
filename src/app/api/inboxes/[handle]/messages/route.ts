@@ -2,7 +2,7 @@ import { prisma } from '@/lib/db';
 import { asString, fail, guard, ok, readJson } from '@/lib/api';
 import { RATE_LIMITS } from '@/lib/ratelimit';
 import { LIMITS, normaliseHandle } from '@/lib/constants';
-import { safeEqual } from '@/lib/server-crypto';
+import { safeEqual, sha256Base64 } from '@/lib/server-crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,7 +61,7 @@ export async function GET(request: Request, { params }: Params) {
   const inbox = await prisma.inbox.findUnique({ where: { handle: normaliseHandle(handle) } });
   if (!inbox) return fail(404, 'No inbox with that handle.');
 
-  if (!safeEqual(inbox.ownerTokenHash, token)) return fail(403, 'This inbox is not yours.');
+  if (!safeEqual(inbox.ownerTokenHash, sha256Base64(token))) return fail(403, 'This inbox is not yours.');
 
   await prisma.encryptedDrop
     .deleteMany({ where: { inboxId: inbox.id, expiresAt: { lte: new Date() } } })

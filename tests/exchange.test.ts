@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { prisma } from '@/lib/db';
 import { __resetRateLimits } from '@/lib/ratelimit';
+import { realPublicKey } from './helpers';
 import { ECONOMY, refundFor } from '@/lib/economy';
 import { deriveGhostIdFromSecret, sha256Base64 } from '@/lib/server-crypto';
 import { settleStaleEscrow } from '@/lib/sweep';
@@ -48,7 +49,7 @@ async function makeGhost(tag: string) {
   const secret = `test-secret-${tag}-${Math.random().toString(36).slice(2)}`;
   const id = deriveGhostIdFromSecret(secret);
   const response = await ghostPost(
-    post('http://t/api/ghost', { id, publicKey: `pk-${tag}-${'A'.repeat(40)}` })
+    post('http://t/api/ghost', { id, publicKey: await realPublicKey() })
   );
   expect(response.status).toBe(201);
   const codename = (await response.json()).codename as string;
@@ -105,7 +106,7 @@ describe('ghost identity', () => {
   it('re-registering the same id restores rather than duplicating', async () => {
     const ghost = await makeGhost('b');
     const again = await ghostPost(
-      post('http://t/api/ghost', { id: ghost.id, publicKey: 'pk-b' })
+      post('http://t/api/ghost', { id: ghost.id, publicKey: await realPublicKey() })
     );
     expect(again.status).toBe(200);
     expect((await again.json()).restored).toBe(true);
@@ -228,6 +229,94 @@ describe('locked records', () => {
       priceKeys: 3,
     });
     expect(status).toBe(400);
+  });
+});
+
+describe('search', () => {
+  it('never matches a word that only appears inside a sealed body', async () => {
+    // Without this, search is an oracle: guess a phrase, see whether the record
+    // comes back, and read a paid secret a word at a time for nothing.
+    const author = await makeGhost('search-author');
+    await fileRecord(author.secret, {
+      body: 'The hidden word is ZEPPELINWRIGHT and it is only in the sealed half.',
+      teaser: 'Something about an aeroplane, which is all you get for free.',
+      isLocked: true,
+      priceKeys: 2,
+    });
+
+    const hit = await wallGet(get('http://t/api/wall?q=ZEPPELINWRIGHT'));
+    const data = await hit.json();
+    expect(data.items).toHaveLength(0);
+  });
+
+  it('matches a sealed record by its teaser, which its author chose to publish', async () => {
+    const author = await makeGhost('search-teaser');
+    await fileRecord(author.secret, {
+      body: 'The sealed half, which search must never reach.',
+      teaser: 'A teaser mentioning MARGATE quite deliberately.',
+      isLocked: true,
+      priceKeys: 2,
+    });
+
+    const hit = await wallGet(get('http://t/api/wall?q=MARGATE'));
+    const data = await hit.json();
+    expect(data.items).toHaveLength(1);
+    expect(data.items[0].body).toBeNull();
+  });
+
+  it('matches a public record by its body', async () => {
+    const ghost = await makeGhost('search-public');
+    await fileRecord(ghost.secret, {
+      body: 'An entirely public confession involving a BICYCLE I never returned.',
+    });
+
+    const hit = await wallGet(get('http://t/api/wall?q=BICYCLE'));
+    expect((await hit.json()).items).toHaveLength(1);
+  });
+
+  it('matches by classification name', async () => {
+    const ghost = await makeGhost('search-class');
+    await fileRecord(ghost.secret, {
+      body: 'Something I have regretted for a very long time indeed.',
+      mood: 'regret',
+    });
+
+    const hit = await wallGet(get('http://t/api/wall?q=regret'));
+    expect((await hit.json()).items.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('sorting', () => {
+  it('orders sealed records by price when asked', async () => {
+    const author = await makeGhost('price-author');
+    for (const price of [1, 7, 3]) {
+      await fileRecord(author.secret, {
+        body: `A sealed body priced at ${price}, distinct from every other one here.`,
+        teaser: `Teaser number ${price}, about a wholly different matter each time.`,
+        isLocked: true,
+        priceKeys: price,
+      });
+    }
+
+    const sorted = await wallGet(get('http://t/api/wall?sort=price'));
+    const prices = (await sorted.json()).items.map((i: { priceKeys: number }) => i.priceKeys);
+    expect(prices).toEqual([...prices].sort((a: number, b: number) => b - a));
+    expect(prices[0]).toBe(7);
+  });
+
+  it('returns only records filed after a given moment', async () => {
+    const ghost = await makeGhost('since-ghost');
+    await fileRecord(ghost.secret, { body: 'An older record, filed before the cutoff moment.' });
+
+    const cutoff = new Date().toISOString();
+    await new Promise((r) => setTimeout(r, 1100));
+
+    await fileRecord(ghost.secret, { body: 'A newer record, filed after the cutoff moment.' });
+
+    const since = await wallGet(get(`http://t/api/wall?sort=new&since=${encodeURIComponent(cutoff)}`));
+    const items = (await since.json()).items;
+    expect(items).toHaveLength(1);
+    expect(items[0].body).toContain('newer record');
   });
 });
 

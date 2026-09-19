@@ -1,5 +1,6 @@
-import { fail, ok } from '@/lib/api';
+import { fail, ok, guard } from '@/lib/api';
 import { settleStaleEscrow, sweepExpired } from '@/lib/sweep';
+import { RATE_LIMITS } from '@/lib/ratelimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,11 @@ export const dynamic = 'force-dynamic';
  * attacker than to an operator.
  */
 export async function POST(request: Request) {
+  // Guarded as well as authenticated: without a limit, the shared secret can
+  // be attacked at whatever rate the network allows.
+  const limited = guard(request, 'maintenance:sweep', RATE_LIMITS.report);
+  if (limited) return limited;
+
   const secret = process.env.CRON_SECRET;
   if (!secret) return fail(503, 'Sweeping is not configured. Set CRON_SECRET.');
 

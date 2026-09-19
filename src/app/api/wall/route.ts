@@ -3,7 +3,7 @@ import { asString, fail, guard, ok, readJson } from '@/lib/api';
 import { RATE_LIMITS } from '@/lib/ratelimit';
 import { screenWallBody } from '@/lib/moderation';
 import { computeHeat } from '@/lib/heat';
-import { LIMITS, MOOD_IDS, PALETTES, isMood } from '@/lib/constants';
+import { LIMITS, MOODS, MOOD_IDS, PALETTES, isMood } from '@/lib/constants';
 import { ECONOMY, clampPrice, standingOf, worthItRate } from '@/lib/economy';
 import { moveKeys, resolveGhost } from '@/lib/ghost-server';
 import { isNearDuplicate, simhash } from '@/lib/simhash';
@@ -82,23 +82,69 @@ export async function GET(request: Request) {
   if (limited) return limited;
 
   const url = new URL(request.url);
-  const sort = url.searchParams.get('sort') === 'new' ? 'new' : 'hot';
+  const rawSort = url.searchParams.get('sort');
+  const sort = rawSort === 'new' || rawSort === 'price' ? rawSort : 'hot';
   const mood = url.searchParams.get('mood');
   const lockedOnly = url.searchParams.get('locked') === '1';
   const page = Math.max(0, Math.min(40, Number(url.searchParams.get('page') ?? 0) || 0));
+  const query = (url.searchParams.get('q') ?? '').trim().slice(0, 80);
+  // An unparseable date would reach Prisma as Invalid Date and 500 the route.
+  const sinceRaw = url.searchParams.get('since');
+  const sinceDate = sinceRaw ? new Date(sinceRaw) : null;
+  const since = sinceDate && !Number.isNaN(sinceDate.getTime()) ? sinceDate : null;
 
   const ghost = await resolveGhost(request);
+
+  /*
+   * Search deliberately never looks inside a sealed body.
+   *
+   * Matching on locked text would turn this endpoint into an oracle: guess a
+   * phrase, see whether the record comes back, and read a paid secret a word at
+   * a time without ever spending a Key. So a sealed record is searchable by its
+   * teaser and its classification only - the parts its author chose to publish.
+   */
+  const search = query
+    ? {
+        OR: [
+          { isLocked: false, body: { contains: query, mode: 'insensitive' as const } },
+          { teaser: { contains: query, mode: 'insensitive' as const } },
+          {
+            mood: {
+              in: MOODS.filter(
+                (m) =>
+                  m.label.toLowerCase().includes(query.toLowerCase()) ||
+                  m.code.toLowerCase() === query.toLowerCase()
+              ).map((m) => m.id),
+            },
+          },
+        ],
+      }
+    : {};
 
   const where = {
     hidden: false,
     ...(mood && MOOD_IDS.includes(mood) ? { mood } : {}),
     ...(lockedOnly ? { isLocked: true } : {}),
+    ...(since ? { createdAt: { gt: since } } : {}),
+    ...search,
   };
 
   let items: PresentableSecret[];
   let hasMore: boolean;
 
-  if (sort === 'new') {
+  if (sort === 'price') {
+    // Dearest first. Only meaningful among sealed records, so it implies them -
+    // an open record has no price and would just pad the bottom of the list.
+    const rows = await prisma.wallSecret.findMany({
+      where: { ...where, isLocked: true },
+      orderBy: [{ priceKeys: 'desc' }, { createdAt: 'desc' }],
+      skip: page * PAGE_SIZE,
+      take: PAGE_SIZE + 1,
+      include: AUTHOR_SELECT,
+    });
+    hasMore = rows.length > PAGE_SIZE;
+    items = rows.slice(0, PAGE_SIZE);
+  } else if (sort === 'new') {
     const rows = await prisma.wallSecret.findMany({
       where,
       orderBy: { createdAt: 'desc' },

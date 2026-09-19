@@ -3,6 +3,7 @@ import { asString, fail, guard, ok, readJson } from '@/lib/api';
 import { RATE_LIMITS } from '@/lib/ratelimit';
 import { LIMITS } from '@/lib/constants';
 import { resolveGhost } from '@/lib/ghost-server';
+import { isValidEcdhPublicKey } from '@/lib/public-key';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,6 +92,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   if (!secret || secret.hidden) return fail(404, 'No such record.');
   if (!secret.ghost) return ok({ reachable: false });
+
+  // Records predating key validation may carry an unusable key. Better to say
+  // the author cannot be reached than to offer a button that throws.
+  if (!isValidEcdhPublicKey(secret.ghost.publicKey)) {
+    return ok({ reachable: false, reason: 'unusable_key' });
+  }
 
   const existing = ghost
     ? await prisma.thread.findUnique({

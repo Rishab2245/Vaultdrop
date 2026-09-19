@@ -134,3 +134,20 @@ export function validateHandle(raw: string): { ok: true; handle: string } | { ok
   }
   return { ok: true, handle };
 }
+
+
+/** What a suggestion is about, so the list can be triaged without reading all of it. */
+export const SUGGESTION_KINDS = [
+  { id: 'idea', label: 'An idea' },
+  { id: 'bug', label: 'Something is broken' },
+  { id: 'safety', label: 'A safety concern' },
+  { id: 'confusing', label: 'Something confused me' },
+] as const;
+
+export const SUGGESTION_KIND_IDS = SUGGESTION_KINDS.map((k) => k.id) as readonly string[];
+
+export function isSuggestionKind(value: unknown): boolean {
+  return typeof value === 'string' && SUGGESTION_KIND_IDS.includes(value);
+}
+
+export const SUGGESTION_MAX = 1000;

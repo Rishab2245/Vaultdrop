@@ -22,6 +22,9 @@ export function SiteFooter() {
             <Link href="/privacy" className="text-label no-underline hover:text-amber">
               What we store
             </Link>
+            <Link href="/suggest" className="text-label no-underline hover:text-amber">
+              Suggestions
+            </Link>
             <a
               href="https://github.com/Rishab2245/Vaultdrop"
               target="_blank"

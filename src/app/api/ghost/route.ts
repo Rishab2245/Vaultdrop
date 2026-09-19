@@ -3,6 +3,7 @@ import { asString, fail, guard, ok, readJson } from '@/lib/api';
 import { RATE_LIMITS } from '@/lib/ratelimit';
 import { ECONOMY } from '@/lib/economy';
 import { codenameFor, presentGhost, recordLedger, resolveGhost } from '@/lib/ghost-server';
+import { isValidEcdhPublicKey } from '@/lib/public-key';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,13 @@ export async function POST(request: Request) {
 
   if (!id || !publicKey) return fail(400, 'A ghost needs an id and a public key.');
   if (!/^[A-Za-z0-9_-]{20,200}$/.test(id)) return fail(400, 'That is not a valid ghost id.');
+
+  // Checked here because this is the only cheap place to catch it. A junk key
+  // stored once makes every record by that ghost permanently unreachable, and
+  // the failure then surfaces at decrypt time, far from the cause.
+  if (!isValidEcdhPublicKey(publicKey)) {
+    return fail(400, 'That public key is not a usable ECDH P-256 key.');
+  }
 
   const existing = await prisma.ghost.findUnique({ where: { id } });
 

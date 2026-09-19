@@ -72,8 +72,18 @@ export function SameThread({ secretId }: { secretId: string }) {
 
       setThreadId(data.threadId);
       setPhase('sent');
-    } catch {
-      setError('Encryption failed. This needs a secure connection.');
+    } catch (err) {
+      // Distinguish the two real causes. Reporting "needs a secure connection"
+      // for an unusable recipient key sent people to debug their browser over
+      // a problem in our data.
+      const insecure =
+        typeof window !== 'undefined' && !window.isSecureContext;
+      setError(
+        insecure
+          ? 'Encryption needs a secure connection. Open this page over HTTPS.'
+          : "This ghost's key cannot be used, so there is no way to reach them."
+      );
+      console.error('[SameThread] seal failed', err);
       setPhase('error');
     }
   }, [authedFetch, note, recipient, secretId]);
