@@ -7,6 +7,7 @@ import { settleStaleEscrow } from '@/lib/sweep';
 
 import { GET as ghostGet, POST as ghostPost } from '@/app/api/ghost/route';
 import { GET as wallGet, POST as wallPost } from '@/app/api/wall/route';
+import { GET as secretGet } from '@/app/api/wall/[id]/route';
 import { POST as openPost } from '@/app/api/wall/[id]/open/route';
 import { POST as verdictPost } from '@/app/api/opens/[id]/verdict/route';
 import {
@@ -146,6 +147,53 @@ describe('locked records', () => {
 
     expect(payload).not.toContain('THE-SECRET-ITSELF-9K2P');
     expect(payload).toContain('Something I have never told my family');
+  });
+
+  it('never returns a locked body from the single-record endpoint either', async () => {
+    // Regression guard. The feed gated locked bodies correctly while
+    // GET /api/wall/[id] returned `body` unconditionally, so anyone who knew an
+    // id could read a sealed record for free - the same failure as the build
+    // this one replaced, one route over. Every path that can emit `body` makes
+    // this decision on its own; there is no single choke point.
+    const author = await makeGhost('single-author');
+    const { data } = await fileRecord(author.secret, {
+      body: 'BY-ID-CANARY-3T: sealed, and not for the curious.',
+      teaser: 'A teaser that is safe for anyone to read.',
+      isLocked: true,
+      priceKeys: 2,
+    });
+    const id = data.secret.id;
+
+    const anon = await secretGet(get(`http://t/api/wall/${id}`), params({ id }));
+    expect(JSON.stringify(await anon.json())).not.toContain('BY-ID-CANARY-3T');
+
+    const stranger = await makeGhost('single-stranger');
+    const signedIn = await secretGet(
+      get(`http://t/api/wall/${id}`, stranger.secret),
+      params({ id })
+    );
+    expect(JSON.stringify(await signedIn.json())).not.toContain('BY-ID-CANARY-3T');
+
+    // The author can always read their own.
+    const own = await secretGet(get(`http://t/api/wall/${id}`, author.secret), params({ id }));
+    expect((await own.json()).secret.body).toContain('BY-ID-CANARY-3T');
+  });
+
+  it('returns the locked body by id once that ghost has paid for it', async () => {
+    const author = await makeGhost('paid-author');
+    const reader = await makeGhost('paid-reader');
+    const { data } = await fileRecord(author.secret, {
+      body: 'PAID-BY-ID-5R: visible only after the Keys moved.',
+      teaser: 'Something worth the two Keys, I promise.',
+      isLocked: true,
+      priceKeys: 2,
+    });
+    const id = data.secret.id;
+
+    await openPost(post(`http://t/api/wall/${id}/open`, {}, reader.secret), params({ id }));
+
+    const after = await secretGet(get(`http://t/api/wall/${id}`, reader.secret), params({ id }));
+    expect((await after.json()).secret.body).toContain('PAID-BY-ID-5R');
   });
 
   it('hides it from a signed-in ghost who has not opened it either', async () => {
