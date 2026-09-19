@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MOODS, PALETTES, REACTIONS, REPORT_REASONS } from '@/lib/constants';
 import { compactNumber, recordRef, timeAgo } from '@/lib/format';
@@ -126,9 +127,15 @@ export function SecretCard({ secret }: { secret: WallSecret; priority?: boolean 
   return (
     <article className="rec">
       <div className="rec-head">
-        <span className="normal-case" style={{ color: channel.hex }}>
+        {/* The reference doubles as the permalink: every record needs an
+            address, or a share card that travels leads nowhere. */}
+        <Link
+          href={`/r/${secret.id}`}
+          className="normal-case no-underline hover:underline"
+          style={{ color: channel.hex }}
+        >
           REC {ref}
-        </span>
+        </Link>
         <span>{mood.code}</span>
         {secret.author && <span>{secret.author.codename}</span>}
         {/* A relative timestamp is computed from the clock, so the server's
@@ -173,6 +180,9 @@ export function SecretCard({ secret }: { secret: WallSecret; priority?: boolean 
           >
             {sharing ? 'RENDERING' : 'EXPORT'}
           </button>
+          <Link href={`/r/${secret.id}`} className="cmd-bare no-underline">
+            REPLIES
+          </Link>
           <button
             type="button"
             onClick={() => setReporting((v) => !v)}

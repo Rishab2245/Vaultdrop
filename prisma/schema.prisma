@@ -66,13 +66,19 @@ model WallSecret {
   worthItCount  Int @default(0)
   notWorthCount Int @default(0)
 
+  commentCount   Int     @default(0)
+  shareCount     Int     @default(0)
+  /// The author can close their own record to further replies.
+  commentsLocked Boolean @default(false)
+
   /// 64-bit SimHash of the normalised body, stored as a hex string. Used to
   /// catch someone reposting an existing secret to farm Keys.
   simhash String?
 
-  reports Report[]
-  opens   Open[]
-  threads Thread[]
+  reports  Report[]
+  opens    Open[]
+  threads  Thread[]
+  comments Comment[]
 
   @@index([hidden, heat])
   @@index([hidden, createdAt])
@@ -181,6 +187,7 @@ model Ghost {
   records  WallSecret[]
   ledger   LedgerEntry[]
   opens    Open[]
+  comments Comment[]
   authored Thread[]        @relation("ThreadAuthor")
   started  Thread[]        @relation("ThreadStarter")
   messages ThreadMessage[]
@@ -285,4 +292,37 @@ model ThreadMessage {
   createdAt DateTime @default(now())
 
   @@index([threadId, createdAt])
+}
+
+/// A public reply on a Wall record.
+///
+/// Comments need a ghost, unlike filing a record. Anonymity is the point of the
+/// Wall, but a reply aimed at someone else is where anonymous platforms turn
+/// into harassment engines - Secret shut down over exactly this in 2015. Tying
+/// a reply to a standing means abuse costs the replier something, while still
+/// telling nobody who they are.
+///
+/// One level of nesting only. Deeper threads turn a confession into a forum
+/// argument, which is not what anyone came here for.
+model Comment {
+  id       String     @id @default(cuid()) @map("_id")
+  secretId String
+  secret   WallSecret @relation(fields: [secretId], references: [id], onDelete: Cascade)
+
+  ghostId String
+  ghost   Ghost  @relation(fields: [ghostId], references: [id], onDelete: Cascade)
+
+  body String
+
+  /// Null for a top-level reply; otherwise the comment being answered.
+  parentId String?
+
+  hidden      Boolean @default(false)
+  reportCount Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([secretId, createdAt])
+  @@index([parentId])
+  @@index([ghostId, createdAt])
 }

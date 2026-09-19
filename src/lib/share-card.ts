@@ -75,6 +75,8 @@ export async function renderShareCard(opts: {
   code: string;
   ref: string;
   palette: number;
+  /** Where the card sends whoever sees it. Without this the loop is open. */
+  url?: string;
 }): Promise<Blob> {
   const canvas = document.createElement('canvas');
   canvas.width = WIDTH;
@@ -140,7 +142,13 @@ export async function renderShareCard(opts: {
 
   ctx.font = `400 20px ${MONO}`;
   ctx.fillStyle = LABEL;
-  ctx.fillText('SAY IT WITHOUT SAYING WHO', MARGIN, HEIGHT - MARGIN - 18);
+
+  // The address is the point of the card. A screenshot that travels without one
+  // reaches people who then have nowhere to go.
+  const tagline = opts.url
+    ? opts.url.replace(/^https?:\/\//, '')
+    : 'SAY IT WITHOUT SAYING WHO';
+  ctx.fillText(tagline.toUpperCase(), MARGIN, HEIGHT - MARGIN - 18);
 
   ctx.letterSpacing = '0px';
 

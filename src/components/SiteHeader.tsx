@@ -9,8 +9,9 @@ const NAV = [
   { href: '/wall', label: 'Wall', key: 'F1' },
   { href: '/confess', label: 'Confess', key: 'F2' },
   { href: '/threads', label: 'Threads', key: 'F3' },
-  { href: '/drop', label: 'Drop', key: 'F4' },
-  { href: '/inbox', label: 'Inbox', key: 'F5' },
+  { href: '/leaderboard', label: 'Standing', key: 'F4' },
+  { href: '/drop', label: 'Drop', key: 'F5' },
+  { href: '/inbox', label: 'Inbox', key: 'F6' },
 ];
 
 export function SiteHeader() {

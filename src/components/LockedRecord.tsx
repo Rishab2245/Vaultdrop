@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useState } from 'react';
 import { ECONOMY } from '@/lib/economy';
 import { recordRef } from '@/lib/format';
@@ -95,9 +96,13 @@ export function LockedRecord({ secret }: { secret: LockedSecret }) {
   return (
     <article className="rec">
       <div className="rec-head">
-        <span className="normal-case" style={{ color: channel.hex }}>
+        <Link
+          href={`/r/${secret.id}`}
+          className="normal-case no-underline hover:underline"
+          style={{ color: channel.hex }}
+        >
           REC {ref}
-        </span>
+        </Link>
         <span>{mood.code}</span>
         <span className="text-amber">SEALED</span>
         <span className="ml-auto tabular">{secret.opens} OPENED</span>
